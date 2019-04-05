@@ -6,7 +6,7 @@
 
 module Language.Modula2.AST (module Language.Modula2.AST,
                              Oberon.Element(..), Oberon.FormalParameters(..), Oberon.FPSection(..),
-                             Oberon.ProcedureBody(..), Oberon.StatementSequence(..),
+                             Oberon.Block(..), Oberon.StatementSequence(..),
                              Oberon.Case(..), Oberon.CaseLabels(..),
                              Oberon.RelOp(..)) where
 
@@ -38,7 +38,7 @@ instance Abstract.Wirthy Language where
    type ProcedureHeading Language = ProcedureHeading Language
    type FormalParameters Language = Oberon.FormalParameters Language
    type FPSection Language = Oberon.FPSection Language
-   type ProcedureBody Language = Oberon.ProcedureBody Language
+   type Block Language = Oberon.Block Language
    type StatementSequence Language = Oberon.StatementSequence Language
    type Case Language = Oberon.Case Language
    type CaseLabels Language = Oberon.CaseLabels Language
@@ -46,7 +46,7 @@ instance Abstract.Wirthy Language where
 
    type IdentDef Language = IdentDef Language
    type QualIdent Language = QualIdent Language
-   
+
    -- Declaration
    constantDeclaration = ConstantDeclaration
    typeDeclaration = TypeDeclaration
@@ -55,16 +55,14 @@ instance Abstract.Wirthy Language where
 
    formalParameters = Oberon.FormalParameters
    fpSection = Oberon.FPSection
-   procedureBody = Oberon.ProcedureBody
+   block = Oberon.Block
    
    fieldList = FieldList
    emptyFieldList = EmptyFieldList
 
    -- Type
-   arrayType = ArrayType
    pointerType = PointerType
    procedureType = ProcedureType
-   recordType = RecordType
    typeReference = TypeReference
 
    -- Statement
@@ -128,34 +126,49 @@ instance Abstract.Nameable Language where
 instance Abstract.Modula2 Language where
    type Export Language = Export Language
    type Definition Language = Declaration False Language
-   type Block Language = Oberon.ProcedureBody Language
    type Variant Language = Variant Language
 
    -- Module
-   programModule = ProgramModule
    definitionModule = DefinitionModule
+   implementationModule = ImplementationModule
+   programModule = ProgramModule
+
+   moduleExport = Export
+   moduleImport = Import
+   
+   -- Definition
+   constantDefinition = ConstantDeclaration
+   typeDefinition = TypeDeclaration
+   variableDefinition = VariableDeclaration
+   procedureDefinition = ProcedureDefinition
 
    -- Declaration
    moduleDeclaration = ModuleDeclaration
-   procedureDefinition = ProcedureDefinition
+
+   -- Type
+   arrayType = ArrayType
+   recordType = RecordType
 
    procedureHeading = ProcedureHeading
    caseFieldList = CaseFieldList
    variant = Variant
-   block = Oberon.ProcedureBody
 
    forStatement = For
    withStatement = With
 
    enumeration = EnumerationType
    subRange = SubrangeType
+   setType = SetType
+   
    set = Set
    qualIdent = QualIdent
 
 data Module l f' f = DefinitionModule Ident
                         [Abstract.Import l] (Maybe (Abstract.Export l)) [f (Abstract.Definition l f' f')]
+                   | ImplementationModule Ident (Maybe (f (Abstract.Priority l f' f')))
+                        [Abstract.Import l] (f (Abstract.Block l f' f'))
                    | ProgramModule Ident (Maybe (f (Abstract.Priority l f' f')))
-                        [Abstract.Import l] (Maybe (f (Abstract.Block l f' f')))
+                        [Abstract.Import l] (f (Abstract.Block l f' f'))
 
 data Import l = Import (Maybe Ident) (Abstract.IdentList l)
 data Export l = Export Bool (Abstract.IdentList l)
@@ -172,22 +185,22 @@ data Declaration (full :: Bool) l (f' :: * -> *) (f :: * -> *) where
    ConstantDeclaration :: Abstract.IdentDef l -> f (Abstract.ConstExpression l f' f') -> Declaration x l f' f
    TypeDeclaration :: Abstract.IdentDef l -> f (Abstract.Type l f' f') -> Declaration x l f' f
    VariableDeclaration :: Abstract.IdentList l -> f (Abstract.Type l f' f') -> Declaration x l f' f
-   ProcedureDeclaration :: f (Abstract.ProcedureHeading l f' f') -> f (Abstract.ProcedureBody l f' f')
+   ProcedureDeclaration :: f (Abstract.ProcedureHeading l f' f') -> f (Abstract.Block l f' f')
                         -> Declaration True l f' f
    ProcedureDefinition :: f (Abstract.ProcedureHeading l f' f') -> Declaration False l f' f
-   ModuleDeclaration :: Ident -> Maybe (f (Abstract.Priority l f' f')) -> [Abstract.Import l] -> f (Abstract.Block l f' f')
-                     -> Declaration True l f' f
+   ModuleDeclaration :: Ident -> Maybe (f (Abstract.Priority l f' f')) -> [Abstract.Import l]
+                     -> Maybe (Abstract.Export l) -> f (Abstract.Block l f' f') -> Declaration True l f' f
 
 {-
 deriving instance (Data l, Typeable x, Typeable f, Typeable f', Show (Abstract.Import l),
                    Data (Abstract.Import l), Data (f (Abstract.Type l f' f')), Data (f (Abstract.ConstExpression l f' f')),
                    Data (f (Abstract.FormalParameters l f' f')), Data (f (Abstract.ProcedureHeading l f' f')),
-                   Data (f (Abstract.ProcedureBody l f' f')), Data (f (Abstract.Block l f' f')),
-                   Data (Abstract.IdentDef l)) => Data (Declaration x l f' f)
+                   Data (f (Abstract.Block l f' f')), Data (Abstract.IdentDef l)) => Data (Declaration x l f' f)
 -}
-deriving instance (Show (Abstract.Import l), Show (f (Abstract.Type l f' f')), Show (f (Abstract.ConstExpression l f' f')),
+deriving instance (Show (Abstract.Export l), Show (Abstract.Import l),
+                   Show (f (Abstract.Type l f' f')), Show (f (Abstract.ConstExpression l f' f')),
                    Show (f (Abstract.FormalParameters l f' f')), Show (f (Abstract.ProcedureHeading l f' f')),
-                   Show (f (Abstract.ProcedureBody l f' f')), Show (f (Abstract.Block l f' f')),
+                   Show (f (Abstract.Block l f' f')), Show (f (Abstract.Block l f' f')),
                    Show (Abstract.IdentDef l)) => Show (Declaration x l f' f)
 
 data QualIdent l = QualIdent [Ident] Ident 
@@ -241,10 +254,11 @@ deriving instance (Eq (Abstract.QualIdent l), Eq (f (Abstract.Designator l f' f'
                    Eq (f (Abstract.Expression l f' f'))) => Eq (Designator l f' f)
 
 data Type l f' f = TypeReference (Abstract.QualIdent l)
-                 | ArrayType [f (Abstract.ConstExpression l f' f')] (f (Abstract.Type l f' f'))
+                 | ArrayType [f (Abstract.Type l f' f')] (f (Abstract.Type l f' f'))
                  | EnumerationType (Abstract.IdentList l)
                  | SubrangeType (f (Abstract.ConstExpression l f' f')) (f (Abstract.ConstExpression l f' f'))
-                 | RecordType (Maybe (Abstract.BaseType l)) (NonEmpty (f (Abstract.FieldList l f' f')))
+                 | SetType (f (Abstract.Type l f' f'))
+                 | RecordType (NonEmpty (f (Abstract.FieldList l f' f')))
                  | PointerType (f (Abstract.Type l f' f'))
                  | ProcedureType (Maybe (f (Abstract.FormalParameters l f' f')))
 
@@ -259,7 +273,7 @@ deriving instance (Show (Abstract.QualIdent l), Show (Abstract.IdentList l), Sho
 
 data FieldList l f' f = FieldList (Abstract.IdentList l) (f (Abstract.Type l f' f'))
                       | CaseFieldList (Maybe Ident) (Abstract.QualIdent l) (NonEmpty (f (Abstract.Variant l f' f')))
-                                      (NonEmpty (f (Abstract.FieldList l f' f')))
+                                      [f (Abstract.FieldList l f' f')]
                       | EmptyFieldList
 
 data Variant l f' f = Variant (NonEmpty (f (Abstract.CaseLabels l f' f'))) (NonEmpty (f (Abstract.FieldList l f' f')))

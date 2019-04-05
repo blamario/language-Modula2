@@ -1,78 +1,329 @@
+{-# Language OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables, TypeFamilies, TemplateHaskell #-}
 module Language.Modula2.Grammar where
 
-{- Adjusted from Report on the Programming Language Modula-2 -}
+import Control.Applicative
+import Control.Monad (guard, void)
+import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
+import Data.List.NonEmpty (NonEmpty, toList)
+import Data.Monoid ((<>), Endo(Endo, appEndo))
+import Data.Text (Text)
+import Text.Grampa
+import Text.Grampa.ContextFree.LeftRecursive (Parser)
+import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
+import Text.Parser.Token (braces, brackets, parens)
 
---ident = letter {letter I digit}.
---number = integer I real.
-integer = digit {digit} I octalDigit {octal Digit} ("B" I "C") I digit {hexDigit} "H".
---real = digit {digit} "." {digit} [ScaleFactor].
-Scale Factor = "E" ["+" I "-"] digit {digit}.
---hexDigit = digit I "A" I "B" I "C" I "D" I "E" I"F".
---digit = octal Digit I "8" I "9".
-octal Digit = "0" I "1" I "2" I "3" I "4" I "5" I "6" 1"7".
-string = "'" {character} "'" I '"' {character} '"' .
-qualident = ident {"." ident}.
---ConstantDeclaration = ident "=" ConstExpression.
----ConstExpression = SimpleConstExpr [relation SimpleConstExpr].
-relation = "=" I "#" I "<>" I "<" I "<=" i ">" I ">=" I IN.
----SimpleConstExpr = ["+" I "-"] ConstTerm {AddOperator ConstTerm}.
---AddOperator = "+" I "-" I OR .
----ConstTerm = ConstFactor {MulOperator ConstFactor}.
---MulOperator = "*" I "/" I DIV  I MOD I AND I "&" .
----ConstFactor = qualident I number I string I set I "(" ConstExpression ")" I NOT ConstFactor.
-set = [qualident] "{" [element {"," element}] "}".
---element = ConstExpression [ ".." ConstExpression].
---TypeDeclaration = ident "=" type.
-type = SimpleType I ArrayType I RecordType I SetType I PointerType I ProcedureType.
-SimpleType = qualident I enumeration I SubrangeType.
-enumeration = "(" Identlist ")".
---Identlist = ident {"," ident}.
-SubrangeType = "[" ConstExpression ".." ConstExpression "]".
-ArrayType = ARRAY SimpleType {"," SimpleType} OF type.
-RecordType = RECORD FieldlistSequence END.
---FieldlistSequence = Fieldlist {";" Fieldlist}.
-Fieldlist = [Identlist ":" type I CASE [ident ":"] qualident OF variant {"|" variant} [ELSE FieldlistSequence] END].
-variant = CaseLabellist ":" FieldlistSequence.
---CaseLabellist = CaseLabels {"," CaseLabels}.
---CaseLabels = ConstExpression [" .. " ConstExpression].
-SetType = SET OF SimpleType.
---PointerType = POINTER TO type.
-ProcedureType = PROCEDURE [FormaITypelist].
-FormalTypelist = "(" [[VAR] FormalType {"," [VAR] FormalType}] ")" [":" qualident].
---VariableDeclaration = Identlist ":" type.
-designator = qualident {"." ident I "[" ExpList "]" I "^"}.
---ExpList = expression {"," expression}.
---expression = SimpleExpression [relation SimpleExpression].
---SimpleExpression = ["+" I"_"] term {AddOperator term}.
---term = factor {MuIOperator factor}.
-factor = number I string I set I designator [ActuaIParameters] I (" expression ") I NOT factor.
---ActualParameters = "(" [ExpList] ")" .
---statement = [assignment I ProcedureCall I If Statement I CaseStatement
---             I WhileStatement I RepeatStatement I LoopStatement I ForStatement I WithStatement I EXIT I RETURN [expression] ].
---assignment = designator ":=" expression.
---ProcedureCall = designator [ActuaIParameters].
---StatementSequence = statement {";" statement}.
---If Statement = IF expression THEN StatementSequence {ELSIF expression THEN StatementSequence} [ELSE StatementSequence] END.
---CaseStatement = CASE expression OF case {" I" case} [ELSE StatementSequence] END.
-case = CaseLabelList ":" StatementSequence.
---WhileStatement = WHILE expression DO StatementSequence END.
---RepeatStatement = REPEAT StatementSequence UNTIL expression.
-ForStatement = FOR ident ":=" expression TO expression [BY ConstExpression] DO StatementSequence END.
---LoopStatement = LOOP StatementSequence END.
-WithStatement = WITH designator DO StatementSequence END.
-ProcedureDeclaration = ProcedureHeading ";" block ident.
-ProcedureHeading = PROCEDURE ident [FormaIParameters].
-block = {declaration} [BEGIN StatementSequence] END.
-declaration = CONST {ConstantDeclaration ";"} I TYPE {TypeDeclaration ";"} I VAR {VariableDeclaration ";"}
-              I ProcedureDeclaration ";"  I ModuleDeclaration.
---FormalParameters = "(" [FPSection {";" FPSection}] ")" [":" qualident].
---FPSection = [VAR] IdentList ":" FormalType.
-FormalType = [ARRAY OF]  qualident.
-ModuleDeclaration = MODULE ident [priority] ";" {import} [export] block ident.
-priority = ,. [,. ConstExpression "]".
-export = EXPORT [QUALIFIED] IdentList ";".
-import = [FROM ident] IMPORT IdentList ";".
-DefinitionModule = DEFINITION MODULE ident ";" {import} [export] {definition} END ident ".".
-definition = CONST {ConstantDeclaration ";"} I TYPE {ident ["=" type] ";"} I VAR {VariableDeclaration ";"} I ProcedureHeading ";" .
-ProgramModule = MODULE ident [priority] ";" {import} block ident "." .
-Compilation Unit = DefinitionModule I {IMPLEMENTATION] ProgramModule.
+import qualified Rank2.TH
+import Transformation.Deep as Deep (Product(Pair))
+
+import qualified Language.Modula2.Abstract as Abstract
+import qualified Language.Modula2.AST as AST
+
+-- | All the productions of the Modula-2 grammar
+data Modula2Grammar l f p = Modula2Grammar {
+   ident :: p Abstract.Ident,
+   number :: p (Abstract.Expression l f f),
+   integer :: p (Abstract.Expression l f f),
+   real :: p (Abstract.Expression l f f),
+   scaleFactor :: p Text,
+   hexDigit :: p Text,
+   digit :: p Text,
+   octalDigit :: p Text,
+   string_prod :: p Text,
+   qualident :: p (Abstract.QualIdent l),
+   constantDeclaration :: p (Abstract.Declaration l f f),
+   constantDefinition :: p (Abstract.Definition l f f),
+   constExpression :: p (NodeWrap (Abstract.ConstExpression l f f)),
+   relation :: p Abstract.RelOp,
+   simpleConstExpr :: p (NodeWrap (Abstract.ConstExpression l f f)),
+   addOperator :: p (BinOp l f),
+   constTerm :: p (NodeWrap (Abstract.ConstExpression l f f)),
+   mulOperator :: p (BinOp l f),
+   constFactor :: p (NodeWrap (Abstract.ConstExpression l f f)),
+   set :: p (Abstract.Expression l f f),
+   element :: p (Abstract.Element l f f),
+   typeDeclaration :: p (Abstract.Declaration l f f),
+   typeDefinition :: p (Abstract.Definition l f f),
+   type_prod :: p (Abstract.Type l f f),
+   simpleType :: p (Abstract.Type l f f),
+   enumeration :: p (Abstract.Type l f f),
+   identList :: p (Abstract.IdentList l),
+   subrangeType :: p (Abstract.Type l f f),
+   arrayType :: p (Abstract.Type l f f),
+   recordType :: p (Abstract.Type l f f),
+   fieldListSequence :: p (NonEmpty (f (Abstract.FieldList l f f))),
+   fieldList :: p (Abstract.FieldList l f f),
+   variant :: p (Abstract.Variant l f f),
+   caseLabelList :: p (NonEmpty (f (Abstract.CaseLabels l f f))),
+   caseLabels :: p (Abstract.CaseLabels l f f),
+   setType :: p (Abstract.Type l f f),
+   pointerType :: p (Abstract.Type l f f),
+   procedureType :: p (Abstract.Type l f f),
+   formalTypeList :: p (Abstract.FormalParameters l f f),
+   variableDeclaration :: p (Abstract.Declaration l f f),
+   variableDefinition :: p (Abstract.Definition l f f),
+   designator :: p (Abstract.Designator l f f),
+   expList :: p (NonEmpty (f (Abstract.Expression l f f))),
+   expression :: p (NodeWrap (Abstract.Expression l f f)),
+   simpleExpression :: p (NodeWrap (Abstract.Expression l f f)),
+   term :: p (NodeWrap (Abstract.Expression l f f)),
+   factor :: p (NodeWrap (Abstract.Expression l f f)),
+   actualParameters :: p [f (Abstract.Expression l f f)],
+   statement :: p (Abstract.Statement l f f),
+   assignment :: p (Abstract.Statement l f f),
+   procedureCall :: p (Abstract.Statement l f f),
+   statementSequence :: p (Abstract.StatementSequence l f f),
+   ifStatement :: p (Abstract.Statement l f f),
+   caseStatement :: p (Abstract.Statement l f f),
+   case_prod :: p (Abstract.Case l f f),
+   whileStatement :: p (Abstract.Statement l f f),
+   repeatStatement :: p (Abstract.Statement l f f),
+   forStatement :: p (Abstract.Statement l f f),
+   loopStatement :: p (Abstract.Statement l f f),
+   withStatement :: p (Abstract.Statement l f f),
+   procedureDeclaration :: p (Abstract.Declaration l f f),
+   procedureHeading :: p (Abstract.Ident, Abstract.ProcedureHeading l f f),
+   block :: p (Abstract.Block l f f),
+   declarationSequence :: p [f (Abstract.Declaration l f f)],
+   formalParameters :: p (Abstract.FormalParameters l f f),
+   fPSection :: p (Abstract.FPSection l f f),
+   formalType :: p (Abstract.Type l f f),
+   moduleDeclaration :: p (Abstract.Declaration l f f),
+   priority :: p (NodeWrap (Abstract.Priority l f f)),
+   export :: p (Abstract.Export l),
+   import_prod :: p (Abstract.Import l),
+   definitionModule :: p (Abstract.Module l f f),
+   definitionSequence :: p [f (Abstract.Definition l f f)],
+   programModule :: p (Abstract.Module l f f),
+   compilationUnit :: p (Abstract.Module l f f)
+   }
+
+type NodeWrap = (,) (Position Text)
+
+{- Adjusted from Report on the Programming Language Modula-2 -}
+grammar :: forall l. Abstract.Modula2 l
+        => GrammarBuilder (Modula2Grammar l NodeWrap) (Modula2Grammar l NodeWrap) Parser Text
+grammar g@Modula2Grammar{..} = g{
+   ident = identifier,
+   number = integer <|> real,
+   integer = Abstract.integer 
+             <$> lexicalToken (digit <> takeCharsWhile isDigit
+                               <|> octalDigit <> takeCharsWhile isOctDigit <> (string "B" <|> string "C")
+                               <|> digit <> takeCharsWhile isHexDigit <> string "H"),
+   real = Abstract.real <$> lexicalToken (digit <> takeCharsWhile isDigit <> string "."
+                                          <> takeCharsWhile isDigit <> moptional scaleFactor),
+   scaleFactor = string "E" <> moptional (string "+" <|> string "-") <> digit <> takeCharsWhile isDigit,
+   hexDigit = satisfyCharInput isHexDigit,
+   digit = satisfyCharInput isDigit,
+   octalDigit = satisfyCharInput isOctDigit,
+   string_prod = lexicalToken (char '\'' *> takeCharsWhile (\c-> c /= '\'' && c /= '\n') <* char '\''
+                               <|> char '"' *> takeCharsWhile (\c-> c /= '"' && c /= '\n') <* char '"'),
+   qualident = Abstract.qualIdent <$> many (ident <* delimiter ".") <*> ident,
+   constantDeclaration = Abstract.constantDeclaration <$> (Abstract.identDef <$> ident)
+                         <* delimiter "=" <*> constExpression,
+   constantDefinition = Abstract.constantDefinition <$> (Abstract.identDef <$> ident)
+                        <* delimiter "=" <*> constExpression,
+   constExpression = simpleConstExpr
+                     <|> wrap (flip Abstract.relation <$> simpleConstExpr <*> relation <*> simpleConstExpr),
+   relation = Abstract.Equal <$ operator "=" <|> Abstract.Unequal <$ (operator "#" <|> keyword "NOT")
+              <|> Abstract.Less <$ operator "<" <|> Abstract.LessOrEqual <$ operator "<=" 
+              <|> Abstract.Greater <$ operator ">" <|> Abstract.GreaterOrEqual <$ operator ">=" 
+              <|> Abstract.In <$ keyword "IN",
+   simpleConstExpr =
+      (wrap (Abstract.positive <$ operator "+" <*> constTerm <|> Abstract.negative <$ operator "-" <*> constTerm) <|> constTerm)
+      <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> constTerm))),
+   addOperator = BinOp . wrapBinary 
+                 <$> (Abstract.add <$ operator "+" <|> Abstract.subtract <$ operator "-" 
+                      <|> Abstract.or <$ keyword "OR"),
+   constTerm = constFactor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> constFactor))),
+   mulOperator = BinOp . wrapBinary
+                 <$> (Abstract.multiply <$ operator "*" <|> Abstract.divide <$ operator "/"
+                      <|> Abstract.integerDivide <$ keyword "DIV" <|> Abstract.modulo <$ keyword "MOD" 
+                      <|> Abstract.and <$ (operator "&" <|> keyword "AND")),
+   constFactor = wrap (Abstract.read <$> wrap (Abstract.variable <$> qualident)
+                       <|> number
+                       <|> Abstract.string <$> string_prod <|> set
+                       <|> Abstract.not <$ (operator "~" <|> keyword "NOT") <*> constFactor)
+                 <|> parens constExpression,
+   set = Abstract.set <$> optional qualident <*> braces (sepBy (wrap element) (delimiter ",")),
+   element = Abstract.element <$> expression
+             <|> Abstract.range <$> expression <* delimiter ".." <*> expression,
+   typeDeclaration = Abstract.typeDeclaration <$> (Abstract.identDef <$> ident) <* delimiter "=" <*> wrap type_prod,
+   typeDefinition = Abstract.typeDefinition <$> (Abstract.identDef <$> ident) <* delimiter "=" <*> wrap type_prod,
+   type_prod = simpleType <|> arrayType <|> recordType <|> setType <|> pointerType <|> procedureType,
+   simpleType = Abstract.typeReference <$> qualident
+                <|> enumeration
+                <|> subrangeType,
+   enumeration = Abstract.enumeration <$> parens identList,
+   identList = sepByNonEmpty (Abstract.identDef <$> ident) (delimiter ","),
+   subrangeType = brackets (Abstract.subRange <$> constExpression <* delimiter ".." <*> constExpression),
+   arrayType =
+      Abstract.arrayType <$ keyword "ARRAY" <*> sepBy1 (wrap simpleType) (delimiter ",") <* keyword "OF" <*> wrap type_prod,
+   recordType = Abstract.recordType <$ keyword "RECORD" <*> fieldListSequence <* keyword "END",
+   fieldListSequence = sepByNonEmpty (wrap fieldList) (delimiter ";"),
+   fieldList = Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod
+               <|> Abstract.caseFieldList <$ keyword "CASE" <*> optional (ident <* delimiter ":") <*> qualident
+                                          <* keyword "OF" <*> sepByNonEmpty (wrap variant) (delimiter "|")
+                                          <*> moptional (toList <$ keyword "ELSE" <*> fieldListSequence) <* keyword "END"
+               <|> pure Abstract.emptyFieldList,
+   variant = Abstract.variant <$> caseLabelList <* delimiter ":" <*> fieldListSequence,
+   caseLabelList = sepByNonEmpty (wrap caseLabels) (delimiter ","),
+   caseLabels = Abstract.singleLabel <$> constExpression
+                <|> Abstract.labelRange <$> constExpression <* delimiter ".." <*> constExpression,
+   setType = Abstract.setType <$ keyword "SET" <* keyword "OF" <*> wrap simpleType,
+   pointerType = Abstract.pointerType <$ keyword "POINTER" <* keyword "TO" <*> wrap type_prod,
+   procedureType = Abstract.procedureType <$ keyword "PROCEDURE" <*> optional (wrap formalTypeList),
+   formalTypeList = Abstract.formalParameters
+                    <$> parens (sepBy (wrap $
+                                       Abstract.fpSection <$> (True <$ keyword "VAR" <|> pure False) <*> pure [] <*> wrap formalType)
+                                      (delimiter ","))
+                    <*> optional (delimiter ":" *> qualident),
+   variableDeclaration = Abstract.variableDeclaration <$> identList <* delimiter ":" <*> wrap type_prod,
+   variableDefinition = Abstract.variableDefinition <$> identList <* delimiter ":" <*> wrap type_prod,
+   designator = Abstract.variable . Abstract.nonQualIdent <$> ident -- qualident
+                <|> Abstract.field <$> wrap designator <* delimiter "." <*> ident
+                <|> Abstract.index <$> wrap designator <*> brackets expList
+                <|> Abstract.dereference <$> wrap designator <* operator "^",
+   expList = sepByNonEmpty expression (delimiter ","),
+   expression = simpleExpression
+                <|> wrap (flip Abstract.relation <$> simpleExpression <*> relation <*> simpleExpression)
+                <?> "expression",
+   simpleExpression = 
+      (wrap (Abstract.positive <$ operator "+" <*> term) <|> wrap (Abstract.negative <$ operator "-" <*> term) <|> term)
+      <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> term))),
+   term = factor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> factor))),
+   factor = wrap (number
+                  <|> Abstract.string <$> string_prod
+                  <|> set
+                  <|> Abstract.read <$> wrap designator
+                  <|> Abstract.functionCall <$> wrap designator <*> actualParameters
+                  <|> Abstract.not <$ keyword "NOT" <*> factor)
+            <|> parens expression,
+   actualParameters = parens (sepBy expression (delimiter ",")),
+   statement = assignment <|> procedureCall <|> ifStatement <|> caseStatement 
+               <|> whileStatement <|> repeatStatement <|> loopStatement <|> forStatement <|> withStatement 
+               <|> Abstract.exitStatement <$ keyword "EXIT" 
+               <|> Abstract.returnStatement <$ keyword "RETURN" <*> optional expression
+               <|> pure Abstract.emptyStatement
+               <?> "statement",
+   assignment  =  Abstract.assignment <$> wrap designator <* delimiter ":=" <*> expression,
+   procedureCall = Abstract.procedureCall <$> wrap designator <*> optional actualParameters,
+   statementSequence = Abstract.statementSequence <$> sepByNonEmpty (wrap statement) (delimiter ";"),
+   ifStatement = Abstract.ifStatement <$ keyword "IF"
+       <*> sepByNonEmpty (wrap $ Deep.Pair <$> expression <* keyword "THEN" <*> wrap statementSequence)
+                         (keyword "ELSIF")
+       <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
+   caseStatement = Abstract.caseStatement <$ keyword "CASE" <*> expression
+       <*  keyword "OF" <*> sepByNonEmpty (wrap case_prod) (delimiter "|")
+       <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
+   case_prod = Abstract.caseAlternative <$> caseLabelList <* delimiter ":" <*> wrap statementSequence,
+   whileStatement = Abstract.whileStatement <$ keyword "WHILE" <*> expression <* keyword "DO"
+                    <*> wrap statementSequence <* keyword "END",
+   repeatStatement = Abstract.repeatStatement <$ keyword "REPEAT"
+                     <*> wrap statementSequence <* keyword "UNTIL" <*> expression,
+   forStatement = 
+      Abstract.forStatement <$ keyword "FOR" <*> ident <* delimiter ":=" <*> expression
+      <* keyword "TO" <*> expression <*> optional (keyword "BY" *> constExpression)
+      <* keyword "DO" <*> wrap statementSequence <* keyword "END",
+   loopStatement = Abstract.loopStatement <$ keyword "LOOP" <*> wrap statementSequence <* keyword "END",
+   withStatement = Abstract.withStatement <$ keyword "WITH" <*> wrap designator <* keyword "DO"
+                   <*> wrap statementSequence <* keyword "END",
+   procedureDeclaration = do (procedureName, heading) <- sequenceA <$> wrap procedureHeading
+                             delimiter ";"
+                             body <- wrap block
+                             lexicalToken (string procedureName)
+                             return (Abstract.procedureDeclaration heading body),
+   procedureHeading = Abstract.procedureHeading <$ keyword "PROCEDURE"
+                      <**> do name <- ident
+                              params <- optional (wrap formalParameters)
+                              return (\proc-> (name, proc name params)),
+   block = Abstract.block <$> declarationSequence <*> optional (keyword "BEGIN" *> wrap statementSequence)
+           <* keyword "END",
+   declarationSequence = concatMany (keyword "CONST" *> many (wrap constantDeclaration <* delimiter ";")
+                                     <|> keyword "TYPE" *> many (wrap typeDeclaration <* delimiter ";")
+                                     <|> keyword "VAR" *> many (wrap variableDeclaration <* delimiter ";")
+                                     <|> some (wrap procedureDeclaration <* delimiter ";"
+                                               <|> wrap moduleDeclaration))
+                         <?> "declarations",
+   formalParameters = Abstract.formalParameters <$> parens (sepBy (wrap fPSection) (delimiter ";"))
+                      <*> optional (delimiter ":" *> qualident),
+   fPSection = Abstract.fpSection <$> (True <$ keyword "VAR" <|> pure False) 
+               <*> sepBy1 ident (delimiter ",") <* delimiter ":" <*> wrap formalType,
+   formalType = Abstract.arrayType [] <$ keyword "ARRAY" <* keyword "OF" <*> wrap formalType 
+                <|> Abstract.typeReference <$> qualident,
+   moduleDeclaration = do keyword "MODULE"
+                          name <- ident
+                          Abstract.moduleDeclaration name <$> optional priority <* delimiter ";"
+                             <*> many import_prod <*> optional export <*> wrap block <* lexicalToken (string name),
+   priority = brackets constExpression,
+   export = Abstract.moduleExport <$ keyword "EXPORT" <*> (True <$ keyword "QUALIFIED" <|> pure False)
+            <*> identList <* delimiter ";",
+   import_prod = Abstract.moduleImport <$> optional (keyword "FROM" *> ident)
+                 <* keyword "IMPORT" <*> identList <* delimiter ";",
+   definitionModule = keyword "DEFINITION" *> keyword "MODULE" *>
+                      do name <- ident
+                         delimiter ";"
+                         Abstract.definitionModule name <$> many import_prod <*> optional export <*> definitionSequence
+                                                   <* keyword "END" <* lexicalToken (string name) <* delimiter ".",
+   definitionSequence =  concatMany (keyword "CONST" *> many (wrap constantDefinition <* delimiter ";")
+                                     <|> keyword "TYPE" *> many (wrap typeDefinition <* delimiter ";")
+                                     <|> keyword "VAR" *> many (wrap variableDefinition <* delimiter ";")
+                                     <|> some (wrap (Abstract.procedureDefinition <$> wrap (snd <$> procedureHeading))
+                                                     <* delimiter ";"))
+                         <?> "definitions",
+   programModule = do con <- (Abstract.implementationModule <$ keyword "IMPLEMENTATION"
+                              <|> pure Abstract.programModule) <* keyword "MODULE"
+                      name <- ident
+                      con name <$> optional priority <* delimiter ";" <*> many import_prod
+                               <*> wrap block <* lexicalToken (string name) <* delimiter ".",
+   compilationUnit = definitionModule <|> programModule
+   }
+
+newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l f f)
+                                          -> f (Abstract.Expression l f f)
+                                          -> f (Abstract.Expression l f f))}
+
+instance Show (BinOp l f) where
+   show = const "BinOp{}"
+
+instance Lexical (Modula2Grammar l f) where
+   type LexicalConstraint p (Modula2Grammar l f) s = (s ~ Text, p ~ Parser)
+   lexicalComment = try (string "(*"
+                         *> skipMany (lexicalComment
+                                      <|> notFollowedBy (string "*)") <* anyToken <* takeCharsWhile isCommentChar)
+                         <* string "*)")
+      where isCommentChar c = c /= '*' && c /= '('
+   lexicalWhiteSpace = takeCharsWhile isSpace *> skipMany (lexicalComment *> takeCharsWhile isSpace)
+   isIdentifierStartChar = isLetter
+   isIdentifierFollowChar = isAlphaNum
+   identifierToken word = lexicalToken (do w <- word
+                                           guard (w `notElem` reservedWords)
+                                           return w)
+
+wrap :: Abstract.Modula2 l => Parser (Modula2Grammar l f) Text a -> Parser (Modula2Grammar l f) Text (NodeWrap a)
+wrap = ((,) <$> getSourcePos <*>)
+
+wrapBinary :: (NodeWrap a -> NodeWrap a -> a) -> (NodeWrap a -> NodeWrap a -> NodeWrap a)
+wrapBinary op a@(pos, _) b = (pos, op a b)
+
+moptional p = p <|> mempty
+
+delimiter, operator :: Abstract.Modula2 l => Text -> Parser (Modula2Grammar l f) Text ()
+
+delimiter s = lexicalToken (void $ string s) <?> ("delimiter " <> show s)
+operator s = lexicalToken (void $ string s) <?> ("operator " <> show s)
+
+reservedWords :: [Text]
+reservedWords = ["AND", "ARRAY", "IMPORT", "RETURN",
+                 "BEGIN", "IN", "THEN",
+                 "BY", "TO",
+                 "CASE", "CONST", "DEFINITION", "EXPORT", "FROM", "IMPLEMENTATION", "LOOP", "TYPE",
+                 "DIV", "MOD", "MODULE", "NOT", "VAR",
+                 "DO", "NIL", "WHILE",
+                 "ELSE", "OF", "WITH",
+                 "ELSIF", "OR",
+                 "END", "POINTER",
+                 "EXIT", "PROCEDURE", "QUALIFIED",
+                 "FOR", "RECORD", "SET", "UNTIL",
+                 "IF", "REPEAT"]
+
+$(Rank2.TH.deriveAll ''Modula2Grammar)
