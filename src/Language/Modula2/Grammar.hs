@@ -21,80 +21,80 @@ import qualified Language.Modula2.AST as AST
 -- | All the productions of the Modula-2 grammar
 data Modula2Grammar l f p = Modula2Grammar {
    ident :: p Abstract.Ident,
-   number :: p (Abstract.Expression l f f),
-   integer :: p (Abstract.Expression l f f),
-   real :: p (Abstract.Expression l f f),
+   number :: p (Abstract.Expression l l f f),
+   integer :: p (Abstract.Expression l l f f),
+   real :: p (Abstract.Expression l l f f),
    scaleFactor :: p Text,
    hexDigit :: p Text,
    digit :: p Text,
    octalDigit :: p Text,
    string_prod :: p Text,
    qualident :: p (Abstract.QualIdent l),
-   constantDeclaration :: p (Abstract.Declaration l f f),
-   constantDefinition :: p (Abstract.Definition l f f),
-   constExpression :: p (NodeWrap (Abstract.ConstExpression l f f)),
+   constantDeclaration :: p (Abstract.Declaration l l f f),
+   constantDefinition :: p (Abstract.Definition l l f f),
+   constExpression :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    relation :: p Abstract.RelOp,
-   simpleConstExpr :: p (NodeWrap (Abstract.ConstExpression l f f)),
+   simpleConstExpr :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    addOperator :: p (BinOp l f),
-   constTerm :: p (NodeWrap (Abstract.ConstExpression l f f)),
+   constTerm :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    mulOperator :: p (BinOp l f),
-   constFactor :: p (NodeWrap (Abstract.ConstExpression l f f)),
-   set :: p (Abstract.Expression l f f),
-   element :: p (Abstract.Element l f f),
-   typeDeclaration :: p (Abstract.Declaration l f f),
-   typeDefinition :: p (Abstract.Definition l f f),
-   type_prod :: p (Abstract.Type l f f),
-   simpleType :: p (Abstract.Type l f f),
-   enumeration :: p (Abstract.Type l f f),
+   constFactor :: p (NodeWrap (Abstract.ConstExpression l l f f)),
+   set :: p (Abstract.Expression l l f f),
+   element :: p (Abstract.Element l l f f),
+   typeDeclaration :: p (Abstract.Declaration l l f f),
+   typeDefinition :: p (Abstract.Definition l l f f),
+   type_prod :: p (Abstract.Type l l f f),
+   simpleType :: p (Abstract.Type l l f f),
+   enumeration :: p (Abstract.Type l l f f),
    identList :: p (Abstract.IdentList l),
-   subrangeType :: p (Abstract.Type l f f),
-   arrayType :: p (Abstract.Type l f f),
-   recordType :: p (Abstract.Type l f f),
-   fieldListSequence :: p (NonEmpty (f (Abstract.FieldList l f f))),
-   fieldList :: p (Abstract.FieldList l f f),
-   variant :: p (Abstract.Variant l f f),
-   caseLabelList :: p (NonEmpty (f (Abstract.CaseLabels l f f))),
-   caseLabels :: p (Abstract.CaseLabels l f f),
-   setType :: p (Abstract.Type l f f),
-   pointerType :: p (Abstract.Type l f f),
-   procedureType :: p (Abstract.Type l f f),
-   formalTypeList :: p (Abstract.FormalParameters l f f),
-   variableDeclaration :: p (Abstract.Declaration l f f),
-   variableDefinition :: p (Abstract.Definition l f f),
-   designator :: p (Abstract.Designator l f f),
-   expList :: p (NonEmpty (f (Abstract.Expression l f f))),
-   expression :: p (NodeWrap (Abstract.Expression l f f)),
-   simpleExpression :: p (NodeWrap (Abstract.Expression l f f)),
-   term :: p (NodeWrap (Abstract.Expression l f f)),
-   factor :: p (NodeWrap (Abstract.Expression l f f)),
-   actualParameters :: p [f (Abstract.Expression l f f)],
-   statement :: p (Abstract.Statement l f f),
-   assignment :: p (Abstract.Statement l f f),
-   procedureCall :: p (Abstract.Statement l f f),
-   statementSequence :: p (Abstract.StatementSequence l f f),
-   ifStatement :: p (Abstract.Statement l f f),
-   caseStatement :: p (Abstract.Statement l f f),
-   case_prod :: p (Abstract.Case l f f),
-   whileStatement :: p (Abstract.Statement l f f),
-   repeatStatement :: p (Abstract.Statement l f f),
-   forStatement :: p (Abstract.Statement l f f),
-   loopStatement :: p (Abstract.Statement l f f),
-   withStatement :: p (Abstract.Statement l f f),
-   procedureDeclaration :: p (Abstract.Declaration l f f),
-   procedureHeading :: p (Abstract.Ident, Abstract.ProcedureHeading l f f),
-   block :: p (Abstract.Block l f f),
-   declarationSequence :: p [f (Abstract.Declaration l f f)],
-   formalParameters :: p (Abstract.FormalParameters l f f),
-   fPSection :: p (Abstract.FPSection l f f),
-   formalType :: p (Abstract.Type l f f),
-   moduleDeclaration :: p (Abstract.Declaration l f f),
-   priority :: p (NodeWrap (Abstract.Priority l f f)),
+   subrangeType :: p (Abstract.Type l l f f),
+   arrayType :: p (Abstract.Type l l f f),
+   recordType :: p (Abstract.Type l l f f),
+   fieldListSequence :: p (NonEmpty (f (Abstract.FieldList l l f f))),
+   fieldList :: p (Abstract.FieldList l l f f),
+   variant :: p (Abstract.Variant l l f f),
+   caseLabelList :: p (NonEmpty (f (Abstract.CaseLabels l l f f))),
+   caseLabels :: p (Abstract.CaseLabels l l f f),
+   setType :: p (Abstract.Type l l f f),
+   pointerType :: p (Abstract.Type l l f f),
+   procedureType :: p (Abstract.Type l l f f),
+   formalTypeList :: p (Abstract.FormalParameters l l f f),
+   variableDeclaration :: p (Abstract.Declaration l l f f),
+   variableDefinition :: p (Abstract.Definition l l f f),
+   designator :: p (Abstract.Designator l l f f),
+   expList :: p (NonEmpty (f (Abstract.Expression l l f f))),
+   expression :: p (NodeWrap (Abstract.Expression l l f f)),
+   simpleExpression :: p (NodeWrap (Abstract.Expression l l f f)),
+   term :: p (NodeWrap (Abstract.Expression l l f f)),
+   factor :: p (NodeWrap (Abstract.Expression l l f f)),
+   actualParameters :: p [f (Abstract.Expression l l f f)],
+   statement :: p (Abstract.Statement l l f f),
+   assignment :: p (Abstract.Statement l l f f),
+   procedureCall :: p (Abstract.Statement l l f f),
+   statementSequence :: p (Abstract.StatementSequence l l f f),
+   ifStatement :: p (Abstract.Statement l l f f),
+   caseStatement :: p (Abstract.Statement l l f f),
+   case_prod :: p (Abstract.Case l l f f),
+   whileStatement :: p (Abstract.Statement l l f f),
+   repeatStatement :: p (Abstract.Statement l l f f),
+   forStatement :: p (Abstract.Statement l l f f),
+   loopStatement :: p (Abstract.Statement l l f f),
+   withStatement :: p (Abstract.Statement l l f f),
+   procedureDeclaration :: p (Abstract.Declaration l l f f),
+   procedureHeading :: p (Abstract.Ident, Abstract.ProcedureHeading l l f f),
+   block :: p (Abstract.Block l l f f),
+   declarationSequence :: p [f (Abstract.Declaration l l f f)],
+   formalParameters :: p (Abstract.FormalParameters l l f f),
+   fPSection :: p (Abstract.FPSection l l f f),
+   formalType :: p (Abstract.Type l l f f),
+   moduleDeclaration :: p (Abstract.Declaration l l f f),
+   priority :: p (NodeWrap (Abstract.Priority l l f f)),
    export :: p (Abstract.Export l),
    import_prod :: p (Abstract.Import l),
-   definitionModule :: p (Abstract.Module l f f),
-   definitionSequence :: p [f (Abstract.Definition l f f)],
-   programModule :: p (Abstract.Module l f f),
-   compilationUnit :: p (Abstract.Module l f f)
+   definitionModule :: p (Abstract.Module l l f f),
+   definitionSequence :: p [f (Abstract.Definition l l f f)],
+   programModule :: p (Abstract.Module l l f f),
+   compilationUnit :: p (Abstract.Module l l f f)
    }
 
 type NodeWrap = (,) (Position Text)
@@ -188,7 +188,7 @@ grammar g@Modula2Grammar{..} = g{
                 <|> wrap (flip Abstract.relation <$> simpleExpression <*> relation <*> simpleExpression)
                 <?> "expression",
    simpleExpression = 
-      (wrap (Abstract.positive <$ operator "+" <*> term) <|> wrap (Abstract.negative <$ operator "-" <*> term) <|> term)
+      (wrap (Abstract.positive <$ operator "+" <*> term) <|> wrap (Abstract.negative <$ operator "-" <*> term :: Parser (Modula2Grammar l NodeWrap) Text (Abstract.Expression l l NodeWrap NodeWrap)) <|> term)
       <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> term))),
    term = factor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> factor))),
    factor = wrap (number
@@ -196,7 +196,7 @@ grammar g@Modula2Grammar{..} = g{
                   <|> set
                   <|> Abstract.read <$> wrap designator
                   <|> Abstract.functionCall <$> wrap designator <*> actualParameters
-                  <|> Abstract.not <$ keyword "NOT" <*> factor)
+                  <|> (Abstract.not <$ keyword "NOT" <*> factor :: Parser (Modula2Grammar l NodeWrap) Text (Abstract.Expression l l NodeWrap NodeWrap)))
             <|> parens expression,
    actualParameters = parens (sepBy expression (delimiter ",")),
    statement = assignment <|> procedureCall <|> ifStatement <|> caseStatement 
@@ -278,9 +278,9 @@ grammar g@Modula2Grammar{..} = g{
    compilationUnit = definitionModule <|> programModule
    }
 
-newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l f f)
-                                          -> f (Abstract.Expression l f f)
-                                          -> f (Abstract.Expression l f f))}
+newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l l f f)
+                                          -> f (Abstract.Expression l l f f)
+                                          -> f (Abstract.Expression l l f f))}
 
 instance Show (BinOp l f) where
    show = const "BinOp{}"
