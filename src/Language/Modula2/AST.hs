@@ -117,6 +117,56 @@ instance Abstract.Wirthy Language where
    identDef = id
    nonQualIdent = QualIdent []
 
+instance Abstract.CoWirthy Language where
+   coDeclaration (ConstantDeclaration name value) = Just (Abstract.constantDeclaration name value)
+   coDeclaration (TypeDeclaration name ty) = Just (Abstract.typeDeclaration name ty)
+   coDeclaration (VariableDeclaration name ty) = Just (Abstract.variableDeclaration name ty)
+--   coDeclaration (ProcedureDeclaration name ty) = Abstract.procedureDeclaration <$> Abstract.coIdentDef name <*> traverse Abstract.coType ty
+
+--   coType (TypeReference q) = Just (Abstract.typeReference q)
+--   coType (ProcedureType params) = Just (Abstract.procedureType params)
+   coType (PointerType destination) = Just (Abstract.pointerType destination)
+   coType _ = Nothing
+
+   coStatement EmptyStatement = Just Abstract.emptyStatement
+   coStatement (Assignment destination expression) = Just (Abstract.assignment destination expression)
+   coStatement (ProcedureCall procedure parameters) = Just (Abstract.procedureCall procedure parameters)
+--   coStatement (If branches fallback) = Just (Abstract.ifStatement branches fallback)
+--   coStatement (CaseStatement scrutinee cases fallback) = Just (Abstract.caseStatement scrutinee cases fallback)
+   coStatement (While condition body) = Just (Abstract.whileStatement condition body)
+   coStatement (Repeat body condition) = Just (Abstract.repeatStatement body condition)
+   coStatement (For index from to by body) = Nothing
+   coStatement (Loop body) = Just (Abstract.loopStatement body)
+   coStatement (With alternatives fallback) = Nothing
+   coStatement Exit = Just Abstract.exitStatement
+   coStatement (Return result) = Just (Abstract.returnStatement result)
+
+   coExpression (Relation op left right) = Just (Abstract.relation op left right)
+   coExpression (Positive e) = Just (Abstract.positive e)
+   coExpression (Negative e) = Just (Abstract.negative e)
+   coExpression (Add left right) = Just (Abstract.add left right)
+   coExpression (Subtract left right) = Just (Abstract.subtract left right)
+   coExpression (Or left right) = Just (Abstract.or left right)
+   coExpression (Multiply left right) = Just (Abstract.multiply left right)
+   coExpression (Divide left right) = Just (Abstract.divide left right)
+   coExpression (IntegerDivide left right) = Just (Abstract.integerDivide left right)
+   coExpression (Modulo left right) = Just (Abstract.modulo left right)
+   coExpression (And left right) = Just (Abstract.and left right)
+   coExpression (Integer n) = Just (Abstract.integer n)
+   coExpression (Real r) = Just (Abstract.real r)
+   coExpression (String s) = Just (Abstract.string s)
+   coExpression Nil = Just Abstract.nil
+   coExpression Set{} = Nothing
+   coExpression (Read var) = Just (Abstract.read var)
+   coExpression (FunctionCall function parameters) = Just (Abstract.functionCall function parameters)
+   coExpression (Not e) = Just (Abstract.not e)
+
+--   coDesignator (Variable q) = Just (Abstract.variable q)
+   coDesignator (Field record name) = Just (Abstract.field record name)
+   coDesignator (Index array indexes) = Just (Abstract.index array indexes)
+   coDesignator (Dereference pointer) = Just (Abstract.dereference pointer)
+   coDesignator _ = Nothing
+
 instance Abstract.Nameable Language where
    getProcedureName (ProcedureHeading name _) = name
    getIdentDefName = id
@@ -207,7 +257,6 @@ data QualIdent l = QualIdent [Ident] Ident
    deriving (Data, Eq, Ord, Show)
 
 data Expression λ l f' f = Relation Oberon.RelOp (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
-                         | IsA (f (Abstract.Expression l l f' f')) (Abstract.QualIdent l)
                          | Positive (f (Abstract.Expression l l f' f'))
                          | Negative (f (Abstract.Expression l l f' f'))
                          | Add (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))

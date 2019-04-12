@@ -4,7 +4,7 @@
 -- | Modula-2 Finally Tagless Abstract Syntax Tree definitions
 
 module Language.Modula2.Abstract (Ident, IdentList, BaseType, ConstExpression, Priority,
-                                  Wirthy(..), Nameable(..), Modula2(..), RelOp(..)) where
+                                  Wirthy(..), CoWirthy(..), Nameable(..), Modula2(..), RelOp(..)) where
 
 import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
