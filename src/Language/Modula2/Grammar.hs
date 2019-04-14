@@ -99,6 +99,9 @@ data Modula2Grammar l f p = Modula2Grammar {
 
 type NodeWrap = (,) (Position Text)
 
+modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
+modula2grammar = fixGrammar grammar
+
 {- Adjusted from Report on the Programming Language Modula-2 -}
 grammar :: forall l. Abstract.Modula2 l
         => GrammarBuilder (Modula2Grammar l NodeWrap) (Modula2Grammar l NodeWrap) Parser Text

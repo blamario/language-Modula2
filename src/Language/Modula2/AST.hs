@@ -121,7 +121,8 @@ instance Abstract.CoWirthy Language where
    coDeclaration (ConstantDeclaration name value) = Just (Abstract.constantDeclaration name value)
    coDeclaration (TypeDeclaration name ty) = Just (Abstract.typeDeclaration name ty)
    coDeclaration (VariableDeclaration name ty) = Just (Abstract.variableDeclaration name ty)
---   coDeclaration (ProcedureDeclaration name ty) = Abstract.procedureDeclaration <$> Abstract.coIdentDef name <*> traverse Abstract.coType ty
+   coDeclaration (ProcedureDeclaration heading body) = Just (Abstract.procedureDeclaration heading body)
+   coDeclaration ModuleDeclaration{} = Nothing
 
 --   coType (TypeReference q) = Just (Abstract.typeReference q)
 --   coType (ProcedureType params) = Just (Abstract.procedureType params)
@@ -137,7 +138,7 @@ instance Abstract.CoWirthy Language where
    coStatement (Repeat body condition) = Just (Abstract.repeatStatement body condition)
    coStatement (For index from to by body) = Nothing
    coStatement (Loop body) = Just (Abstract.loopStatement body)
-   coStatement (With alternatives fallback) = Nothing
+   coStatement (With designator body) = Nothing
    coStatement Exit = Just Abstract.exitStatement
    coStatement (Return result) = Just (Abstract.returnStatement result)
 
@@ -220,8 +221,8 @@ data Module λ l f' f = DefinitionModule Ident
                      | ProgramModule Ident (Maybe (f (Abstract.Priority l l f' f')))
                           [Abstract.Import l] (f (Abstract.Block l l f' f'))
 
-data Import λ = Import (Maybe Ident) (Abstract.IdentList Language)
-data Export λ = Export Bool (Abstract.IdentList Language)
+data Import λ = Import (Maybe Ident) (Abstract.IdentList Language) deriving (Data, Show)
+data Export λ = Export Bool (Abstract.IdentList Language) deriving (Data, Show)
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f', Data (Abstract.Import l), Data (Abstract.Export l),
                    Data (f (Abstract.Priority l l f' f')),
