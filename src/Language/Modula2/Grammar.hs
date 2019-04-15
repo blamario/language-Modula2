@@ -127,7 +127,7 @@ grammar g@Modula2Grammar{..} = g{
                         <* delimiter "=" <*> constExpression,
    constExpression = simpleConstExpr
                      <|> wrap (flip Abstract.relation <$> simpleConstExpr <*> relation <*> simpleConstExpr),
-   relation = Abstract.Equal <$ operator "=" <|> Abstract.Unequal <$ (operator "#" <|> keyword "NOT")
+   relation = Abstract.Equal <$ operator "=" <|> Abstract.Unequal <$ (operator "#" <|> operator "<>")
               <|> Abstract.Less <$ operator "<" <|> Abstract.LessOrEqual <$ operator "<=" 
               <|> Abstract.Greater <$ operator ">" <|> Abstract.GreaterOrEqual <$ operator ">=" 
               <|> Abstract.In <$ keyword "IN",
