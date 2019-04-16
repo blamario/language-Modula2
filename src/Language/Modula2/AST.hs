@@ -132,8 +132,8 @@ instance Abstract.CoWirthy Language where
    coStatement EmptyStatement = Just Abstract.emptyStatement
    coStatement (Assignment destination expression) = Just (Abstract.assignment destination expression)
    coStatement (ProcedureCall procedure parameters) = Just (Abstract.procedureCall procedure parameters)
---   coStatement (If branches fallback) = Just (Abstract.ifStatement branches fallback)
---   coStatement (CaseStatement scrutinee cases fallback) = Just (Abstract.caseStatement scrutinee cases fallback)
+   coStatement (If branches fallback) = Just (Abstract.ifStatement branches fallback)
+   coStatement (CaseStatement scrutinee cases fallback) = Just (Abstract.caseStatement scrutinee cases fallback)
    coStatement (While condition body) = Just (Abstract.whileStatement condition body)
    coStatement (Repeat body condition) = Just (Abstract.repeatStatement body condition)
    coStatement (For index from to by body) = Nothing
@@ -162,7 +162,7 @@ instance Abstract.CoWirthy Language where
    coExpression (FunctionCall function parameters) = Just (Abstract.functionCall function parameters)
    coExpression (Not e) = Just (Abstract.not e)
 
---   coDesignator (Variable q) = Just (Abstract.variable q)
+   coDesignator (Variable q) = Just (Abstract.variable q)
    coDesignator (Field record name) = Just (Abstract.field record name)
    coDesignator (Index array indexes) = Just (Abstract.index array indexes)
    coDesignator (Dereference pointer) = Just (Abstract.dereference pointer)

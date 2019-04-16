@@ -63,7 +63,7 @@ main = execParser opts >>= main'
         <$> mode
         <*> (option auto (long "index" <> help "Index of ambiguous parse" <> showDefault <> value 0 <> metavar "INT"))
         <*> (Pretty <$> option auto (long "pretty" <> help "Pretty-print output" <> metavar "WIDTH")
-             <|> Tree <$ switch (long "tree" <> help "Print the output as an abstract syntax tree")
+             <|> flag' Tree (long "tree" <> help "Print the output as an abstract syntax tree")
              <|> pure Plain)
         <*> optional (strOption (short 'i' <> long "include" <> metavar "DIRECTORY"
                                  <> help "Where to look for imports"))

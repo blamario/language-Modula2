@@ -150,6 +150,10 @@ instance (Pretty (Abstract.ConstExpression l l Identity Identity),
           Pretty (Language.Oberon.Abstract.WithAlternative l l Identity Identity),
           Pretty (Abstract.StatementSequence l l Identity Identity)) =>
          Pretty (Statement Language l Identity Identity) where
+   prettyList l = vsep (dropEmptyTail $ punctuate semi $ pretty <$> l)
+      where dropEmptyTail
+               | not (null l), EmptyStatement <- last l = init
+               | otherwise = id
    pretty (For index from to by body) = vsep ["FOR" <+> pretty index <+> ":=" <+> pretty from <+> "TO" <+> pretty to
                                               <+> foldMap ("BY" <+>) (pretty <$> by) <+> "DO",
                                               prettyBody body,
