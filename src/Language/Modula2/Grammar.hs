@@ -244,8 +244,8 @@ grammar g@Modula2Grammar{..} = g{
    declarationSequence = concatMany (keyword "CONST" *> many (wrap constantDeclaration <* delimiter ";")
                                      <|> keyword "TYPE" *> many (wrap typeDeclaration <* delimiter ";")
                                      <|> keyword "VAR" *> many (wrap variableDeclaration <* delimiter ";")
-                                     <|> some (wrap procedureDeclaration <* delimiter ";"
-                                               <|> wrap moduleDeclaration))
+                                     <|> (:[]) <$> (wrap procedureDeclaration <* delimiter ";"
+                                                    <|> wrap moduleDeclaration))
                          <?> "declarations",
    formalParameters = Abstract.formalParameters <$> parens (sepBy (wrap fPSection) (delimiter ";"))
                       <*> optional (delimiter ":" *> qualident),
@@ -270,15 +270,15 @@ grammar g@Modula2Grammar{..} = g{
    definitionSequence =  concatMany (keyword "CONST" *> many (wrap constantDefinition <* delimiter ";")
                                      <|> keyword "TYPE" *> many (wrap typeDefinition <* delimiter ";")
                                      <|> keyword "VAR" *> many (wrap variableDefinition <* delimiter ";")
-                                     <|> some (wrap (Abstract.procedureDefinition <$> wrap (snd <$> procedureHeading))
-                                                     <* delimiter ";"))
+                                     <|> (:[]) <$> (wrap (Abstract.procedureDefinition <$> wrap (snd <$> procedureHeading))
+                                                    <* delimiter ";"))
                          <?> "definitions",
    programModule = do con <- (Abstract.implementationModule <$ keyword "IMPLEMENTATION"
                               <|> pure Abstract.programModule) <* keyword "MODULE"
                       name <- ident
                       con name <$> optional priority <* delimiter ";" <*> many import_prod
                                <*> wrap block <* lexicalToken (string name) <* delimiter ".",
-   compilationUnit = definitionModule <|> programModule
+   compilationUnit = lexicalWhiteSpace *> (definitionModule <|> programModule) <* optional (char '\x1a')
    }
 
 newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l l f f)
@@ -312,8 +312,8 @@ moptional p = p <|> mempty
 
 delimiter, operator :: Abstract.Modula2 l => Text -> Parser (Modula2Grammar l f) Text ()
 
-delimiter s = lexicalToken (void $ string s) <?> ("delimiter " <> show s)
-operator s = lexicalToken (void $ string s) <?> ("operator " <> show s)
+delimiter s = void (lexicalToken $ string s) <?> ("delimiter " <> show s)
+operator s = void (lexicalToken $ string s) <?> ("operator " <> show s)
 
 reservedWords :: [Text]
 reservedWords = ["AND", "ARRAY", "IMPORT", "RETURN",
@@ -321,7 +321,7 @@ reservedWords = ["AND", "ARRAY", "IMPORT", "RETURN",
                  "BY", "TO",
                  "CASE", "CONST", "DEFINITION", "EXPORT", "FROM", "IMPLEMENTATION", "LOOP", "TYPE",
                  "DIV", "MOD", "MODULE", "NOT", "VAR",
-                 "DO", "NIL", "WHILE",
+                 "DO", "WHILE",
                  "ELSE", "OF", "WITH",
                  "ELSIF", "OR",
                  "END", "POINTER",
