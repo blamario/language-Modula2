@@ -34,14 +34,14 @@ instance (Pretty (Abstract.Priority l l Identity Identity),
        vsep (pretty <$> imports),
        foldMap pretty export]
       <> (pretty <$> declarations)
+      <> ["END" <+> pretty name <> "." <> line]
    pretty (ImplementationModule name priority imports body) =
      "IMPLEMENTATION" <+> pretty (ProgramModule name priority imports body)
    pretty (ProgramModule name priority imports body) =
       vsep $ intersperse mempty $
       ["MODULE" <+> pretty name <> maybe mempty (brackets . pretty) priority <> semi,
        vsep (pretty <$> imports)]
-      <> [vsep (foldMap (\statements-> ["BEGIN" <#> indent 3 (pretty statements)]) body
-                <> ["END" <+> pretty name <> "." <> line])]
+      <> [vsep [pretty body, "END" <+> pretty name <> "." <> line]]
 
 instance Pretty (Import l) where
   pretty (Import origin names) =
@@ -95,23 +95,31 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Element l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.QualIdent l)) => Pretty (Expression Language l Identity Identity) where
-   pretty (Set ty elements) = pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
-   pretty e = foldMap pretty (Abstract.coExpression e :: Maybe (Oberon.Expression Oberon.Language l Identity Identity))
+   pretty e = pretty (Precedence 0 e)
 
-instance Pretty (Expression Language l Identity Identity) =>
+instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
+          Pretty (Abstract.Expression l l Identity Identity),
+          Pretty (Abstract.Element l l Identity Identity),
+          Pretty (Abstract.Designator l l Identity Identity),
+          Pretty (Abstract.QualIdent l)) =>
          Pretty (Precedence (Expression Language l Identity Identity)) where
-  pretty (Precedence _ e) = pretty e
+   pretty (Precedence p (Set ty elements)) = pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
+   pretty (Precedence p e) =
+      foldMap (pretty . Precedence p) (Abstract.coExpression e :: Maybe (Oberon.Expression Oberon.Language l Identity Identity))
 
 instance (Pretty (Abstract.QualIdent l), Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.Expression l l Identity Identity)) => Pretty (Designator Language l Identity Identity) where
    pretty d = foldMap pretty (Abstract.coDesignator d :: Maybe (Oberon.Designator Oberon.Language l Identity Identity))
 
-instance (Pretty (Abstract.FormalParameters l l Identity Identity), Pretty (Abstract.FieldList l l Identity Identity),
+instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Identity Identity),
+          Pretty (Abstract.FieldList l l Identity Identity),
           Pretty (Abstract.ConstExpression l l Identity Identity), Pretty (Abstract.Type l l Identity Identity),
           Pretty (Abstract.BaseType l)) => Pretty (Type Language l Identity Identity) where
-   pretty (TypeReference q) = pretty q
    pretty (ArrayType dimensions itemType) =
       "ARRAY" <+> hsep (punctuate comma $ pretty . runIdentity <$> dimensions) <+> "OF" <+> pretty itemType
+   pretty (EnumerationType values) = "(" <> hsep (punctuate comma $ toList $ pretty <$> values) <> ")"
+   pretty (SubrangeType min max) = "[" <> pretty min <+> ".." <+> pretty max <> "]"
+   pretty (SetType memberType) = "SET" <+> "OF" <+> pretty memberType
    pretty (RecordType fields) = vsep ["RECORD",
                                        indent 3 (vsep $ punctuate semi $ pretty <$> toList fields),
                                        "END"]
@@ -142,7 +150,7 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
           Pretty (Abstract.Type l l Identity Identity)) =>
          Pretty (ProcedureHeading l l Identity Identity) where
    pretty (ProcedureHeading name parameters) =
-      "PROCEDURE" <> pretty name <> pretty parameters
+      "PROCEDURE" <+> pretty name <> pretty parameters
 
 instance (Pretty (Abstract.ConstExpression l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),
