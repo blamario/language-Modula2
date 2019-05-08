@@ -151,7 +151,7 @@ grammar g@Modula2Grammar{..} = g{
    element = Abstract.element <$> expression
              <|> Abstract.range <$> expression <* delimiter ".." <*> expression,
    typeDeclaration = Abstract.typeDeclaration <$> (Abstract.identDef <$> ident) <* delimiter "=" <*> wrap type_prod,
-   typeDefinition = Abstract.typeDefinition <$> (Abstract.identDef <$> ident) <* delimiter "=" <*> wrap type_prod,
+   typeDefinition = Abstract.typeDefinition <$> (Abstract.identDef <$> ident) <*> optional (delimiter "=" *> wrap type_prod),
    type_prod = simpleType <|> arrayType <|> recordType <|> setType <|> pointerType <|> procedureType,
    simpleType = Abstract.typeReference <$> qualident
                 <|> enumeration

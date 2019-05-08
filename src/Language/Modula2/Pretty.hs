@@ -65,6 +65,7 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
    pretty (ProcedureDefinition heading) = pretty heading <> semi
    pretty (ConstantDeclaration ident (Identity expr)) = "CONST" <+> pretty ident <+> "=" <+> pretty expr <> semi
    pretty (TypeDeclaration ident typeDef) = "TYPE" <+> pretty ident <+> "=" <+> pretty typeDef <> semi
+   pretty (OpaqueTypeDeclaration ident) = "TYPE" <+> pretty ident <> semi
    pretty (VariableDeclaration idents varType) =
       "VAR" <+> hsep (punctuate comma $ pretty <$> toList idents) <+> colon <+> pretty varType <> semi
 

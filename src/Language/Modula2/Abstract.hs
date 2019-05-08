@@ -31,7 +31,7 @@ class Wirthy l => Modula2 l where
 
    -- Definition
    constantDefinition :: IdentDef l' -> f (ConstExpression l' l' f' f') -> Definition l l' f' f
-   typeDefinition :: IdentDef l' -> f (Type l' l' f' f') -> Definition l l' f' f
+   typeDefinition :: IdentDef l' -> Maybe (f (Type l' l' f' f')) -> Definition l l' f' f
    variableDefinition :: IdentList l' -> f (Type l' l' f' f') -> Definition l l' f' f
    procedureDefinition :: f (ProcedureHeading l' l' f' f') -> Definition l l' f' f
 

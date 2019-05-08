@@ -189,7 +189,7 @@ instance Abstract.Modula2 Language where
    
    -- Definition
    constantDefinition = ConstantDeclaration
-   typeDefinition = TypeDeclaration
+   typeDefinition = \name-> maybe (OpaqueTypeDeclaration name) (TypeDeclaration name)
    variableDefinition = VariableDeclaration
    procedureDefinition = ProcedureDefinition
 
@@ -235,6 +235,7 @@ deriving instance (Show (Abstract.Import l), Show (Abstract.Export l), Show (f (
 data Declaration (full :: Bool) λ l (f' :: * -> *) (f :: * -> *) where
    ConstantDeclaration :: Abstract.IdentDef l -> f (Abstract.ConstExpression l l f' f') -> Declaration x λ l f' f
    TypeDeclaration :: Abstract.IdentDef l -> f (Abstract.Type l l f' f') -> Declaration x λ l f' f
+   OpaqueTypeDeclaration :: Abstract.IdentDef l -> Declaration False λ l f' f
    VariableDeclaration :: Abstract.IdentList l -> f (Abstract.Type l l f' f') -> Declaration x λ l f' f
    ProcedureDeclaration :: f (Abstract.ProcedureHeading l l f' f') -> f (Abstract.Block l l f' f')
                         -> Declaration True λ l f' f
