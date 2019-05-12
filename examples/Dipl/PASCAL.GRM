@@ -1,0 +1,115 @@
+Program = ZaglavljePrograma ';' Blok '.'
+ZaglavljePrograma = 'PROGRAM' Ident [ListaProgramskihParametara].
+ListaProgramskihParametara = '(' ListaIdentifikatora ')'.
+Blok = DeklaracioniDeoLabela DefinicioniDeoKonstanti DefinicioniDeoTipova
+      DeklaracioniDeoPromenljivih DeklaracioniDeoProceduraIFunkcija SlozeniIskaz.
+DeklaracioniDeoLabela = ['LABEL' NizSledovaCifara ';'].
+NizSledovaCifara = SledCifara [',' NizSledovaCifara].
+DefinicioniDeoKonstanti = ['CONST' NizDefinicijaKonstanti].
+NizDefinicijaKonstanti = DefinicijaKonstante ';' [NizDefinicijaKonstanti].
+DefinicioniDeoTipova = ['TYPE' NizDefinicijaTipa].
+NizDefinicijaTipa = DefinicijaTipa ';' [NizDefinicijaTipa].
+DeklaracioniDeoPromenljivih = ['VAR' NizDeklaracijaPromenljivih].
+NizDeklaracijaPromenljivih = DeklaracijaPromenljivih ';' [NizDeklaracijaPromenljivih].
+DeklaracioniDeoProceduraIFunkcija = (DeklaracijaProcedure | DeklaracijaFunkcije) ';' [DeklaracioniDeoProceduraIFunkcija].
+DefinicijaKonstante = Ident '=' Konstanta.
+DefinicijaTipa = Ident '=' Tip.
+DeklaracijaPromenljivih = ListaIdentifikatora ':' Tip.
+DeklaracijaProcedure = ZaglavljeProcedure ';' (Blok | Direktiva) | IdentifikacijaProcedure ';' Blok.
+DeklaracijaFunkcije = ZaglavljeFunkcije ';' (Blok | Direktiva) | IdentifikacijaFunkcije ';' Blok.
+ZaglavljeProcedure = 'PROCEDURE' Ident [ListaFormalnihParametara].
+IdentifikacijaProcedure = 'PROCEDURE' Ident.
+ZaglavljeFunkcije = 'FUNCTION' Ident [ListaFormalnihParametara] ':' TipRezultata.
+IdentifikacijaFunkcije = 'FUNCTION' Ident.
+ListaFormalnihParametara = '(' NizOdeljakaFormalnihParametara ')'.
+NizOdeljakaFormalnihParametara = OdeljakFormalnihParametara [';' NizOdeljakaFormalnihParametara].
+OdeljakFormalnihParametara = SpecifikacijaVrednosnihParametara | 
+      SpecifikacijaPromenljivihParametara | ZaglavljeProcedure | ZaglavljeFunkcije.
+SpecifikacijaVrednosnihParametara = ListaIdentifikatora ':' (Ident | SemaSaglasnogNiza).
+SpecifikacijaPromenljivihParametara = 'VAR' SpecifikacijaVrednosnihParametara.
+SemaSaglasnogNiza = SemaSpakovanogSaglasnogNiza | SemaNepakovanogSaglasnogNiza.
+SemaSpakovanogSaglasnogNiza = 'PACKED' 'ARRAY' '[' [SpecifikacijaTipaIndeksa] ']' 'OF' Ident.
+SemaNepakovanogSaglasnogNiza = 'ARRAY' '[' NizSpecifikacijaTipaIndeksa ']' 'OF' (Ident | SemaSaglasnogNiza).
+NizSpecifikacijaTipaIndeksa = SpecifikacijaTipaIndeksa [';' NizSpecifikacijaTipaIndeksa].
+SpecifikacijaTipaIndeksa = Ident '..' Ident ';' Ident.
+
+SlozeniIskaz = 'BEGIN' SledIskaza 'END'.
+SledIskaza = Iskaz [';' SledIskaza].
+Iskaz = [Labela ':'] (ProstIskaz | StruktuiraniIskaz).
+ProstIskaz = [IskazDodeleVrednosti | ProcedurniIskaz | IskazGoto].
+StruktuiraniIskaz = SlozeniIskaz | UslovniIskaz | IskazPonavljanja | IskazWith.
+UslovniIskaz = IskazIf | IskazCase.
+IskazPonavljanja = IskazWhile | IskazRepeat | IskazFor.
+IskazDodeleVrednosti = (Promenljiva | Ident) ':=' Izraz.
+ProcedurniIskaz = Ident [ListaStvarnihParametara | ListaWriteParametara].
+IskazGoto = 'GOTO' Labela.
+IskazIf = 'IF' Izraz 'THEN' Iskaz ['ELSE' Iskaz].
+IskazCase = 'CASE' Izraz  'OF' NizSlucajeva [';'] 'END'.
+IskazRepeat = 'REPEAT' SledIskaza 'UNTIL' Izraz.
+IskazWhile = 'WHILE' Izraz 'DO' Iskaz.
+IskazFor = 'FOR' Ident ':=' Izraz ('TO' | 'DOWNTO') Izraz 'DO' Iskaz.
+IskazWith = 'WITH' ListaPromenljivih 'DO'
+ListaPromenljivih = Promenljiva [',' ListaPromenljivih].
+Slucaj = Konstanta (':' Iskaz | ',' Slucaj).
+
+Tip = ProstiTip | StruktuiraniTip | PokazivackiTip.
+ProstiTip = RedniTip | Ident.
+StruktuiraniTip = ['PACKED'] NepakovaniStruktuiraniTip.
+Pokazivackitip = '^' Ident.
+RedniTip = NabrojaniTip | PodIntervalniTip | Ident.
+NepakovaniStruktuiraniTip = NizovskiTip | SlogovskiTip | SkupovskiTip | DatoteckiTip.
+NabrojanTip = '(' ListaIdentifikatora ')'.
+PodintervalniTip = Konstanta '..' Konstanta.
+NizovskiTip = 'ARRAY' '[' NizRednihTipova ']' 'OF' TipKomponenti.
+NizRednihTipova = RedniTip [',' NizRednihTipova].
+SlogovskiTip = 'RECORD' ListaPolja 'END'.
+SkupovskiTip = 'SET' 'OF' RedniTip.
+DatoteckiTip = 'FILE' 'OF' Tip.
+ListaPolja = [(StalniDeo [';' PromenljiviDeo] | PromenljiviDeo) [';']].
+StalniDeo = OdeljakSloga [';' StalniDeo].
+PromenljiviDeo = 'CASE' SelektorVarijanti 'OF' NizVarijanti.
+NizVarijanti = Varijanta [';' NizVarijanti].
+OdeljakSloga = ListaIdentifikatora ':' Tip.
+SelektorVarijanti = [Ident ':'] Ident.
+Varijanta = Konstanta (':' '(' ListaPolja ')' | ',' Varijanta).
+Konstanta = ['+' | '-'] (NeoznaceniBroj | Ident) | StringZnakova.
+
+Izraz = ProstIzraz [relacioniOperator ProstIzraz].
+ProstIzraz = ['+' | '-'] NizSabiraka.
+NizSabiraka = Sabirak [operatorSabiranja Sabirak].
+Sabirak = Cinilac [operatorMnozenja Sabirak].
+Cinilac = NeoznacenaKonstanta | Ident | Promenljiva | IzgradjivacSkupa | 
+      OznakaFunkcije | 'NOT' Cinilac | '(' Izraz ')'.
+relacioniOperator = '=' | '<>' | '<' | '<=' | '>' | '>=' | 'IN'.
+operatorSabiranja = '+' | '-' | 'OR'.
+operatorMnozenja = '*' | '/' | 'DIV' | 'MOD' | 'AND'.
+NeoznacenaKonstanta = NeoznaceniBroj | StringZnakova | Ident | 'NIL'.
+OznakaFunkcije = Ident [ListaStvarnihParametara].
+
+Promenljiva = Ident | KomponentnaPromenljiva | PokazanaPromenljiva | BaferPromenljiva.
+KomponentnaPromenljiva = IndeksiranaPromenljiva | OznakaPolja.
+PokazanaPromenljiva = Promenljiva '^'.
+BaferPromenljiva = Promenljiva '^'.
+IndeksiranaPromenljiva = Promenljiva '[' NizIzraza ']'.
+NizIzraza = Izraz [',' Izraz].
+OznakaPolja = [Promenljiva '.'] Ident.
+IzgradjivacSkupa = '[' [NizOpisaElementa] ']'.
+NizOpisaElementa = Izraz ['..' Izraz] [',' NizOpisaElementa].
+ListaStvarnihParametara = '(' NizIzraza ')'.
+ListaWriteParametara = '(' (DatoteckaPromenljiva | WriteParametar) OstatakWriteParametara ')'.
+OstatakWriteParametara = ',' WriteParametar [OstatakWriteParametara].
+
+NeoznaceniBroj = NeoznaceniCeoBroj | NeoznaceniRealniBroj.
+ListaIdentifikatora = Ident [',' ListaIdentifikatora].
+Ident = Slovo [OstatakIdentifikatora].
+OstatakIdentifikatora = (Slovo | Cifra) [OstatakIdentfikatora].
+Direktiva = Ident.
+Labela = SledCifara.
+NeoznaceniCeoBroj = SledCifara.
+NeoznaceniRealniBroj = NeoznaceniCeoBroj ('.' SledCifara ['E' Eksponent] | 'E' Eksponent).
+Eksponent = ['+' | '-'] NeoznaceniCeoBroj.
+StringZnakova = "'" OstatakStringa.
+OstatakStringa = "'" | BiloKojiZnakOsimApostrofa OstatakStringa.
+SledCifara = Cifra [SledCifara].
+
+

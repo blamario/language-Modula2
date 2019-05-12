@@ -1,0 +1,12 @@
+DEFINITION MODULE Memory;
+
+PROCEDURE MarkNeeded(VAR ptr:ADDRESS; length:CARDINAL; VAR newDiscovery:BOOLEAN);
+PROCEDURE Collect;
+PROCEDURE AddMarker(marker:PROC);
+PROCEDURE DropMarker;
+PROCEDURE ALLOCATE(VAR ptr:ADDRESS; length:CARDINAL);
+
+END Memory.
+
+
+

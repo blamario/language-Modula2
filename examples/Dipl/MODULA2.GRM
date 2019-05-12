@@ -1,0 +1,146 @@
+Load(
+   Ident= IdentGrammar(First=slovo(), Tail={0-9,A-Z,a-z}),
+   slovo= {A-Z, a-z},
+   cifra= {0-9},
+
+   Broj= GRAMMAR                    CeoBroj() | RealanBroj().,
+   CeoBroj= GRAMMAR                 DecimalniBroj() | OktalniBroj() | HexadecimalniBroj().,
+   RealanBroj= GRAMMAR              Left=DecimalniBroj() '.' Right=[DecimalniBroj()] Exp=[Eksponent()]: Real().,
+   Eksponent= GRAMMAR               Raise=[Sign=('+' | '-'): Signed()] Body=DecimalniBroj(): Body().,
+   DecimalniBroj= GRAMMAR           Body=IdentGrammar(First=cifra(), Tail=cifra()): NrCons().,
+   OktalniBroj= GRAMMAR             Body=IdentGrammar(First=oktalnaCifra(), Tail=oktalnaCifra()) Sign=('B' | 'C'): OctCons().,
+   HexadecimalniBroj= GRAMMAR       Body=IdentGrammar(First=cifra(), Tail=hexadecimalnaCifra()) 'H': HexCons().,
+   oktalnaCifra=                    {0-7},
+   hexadecimalnaCifra=              {0-9,A-F,a-f},
+
+   ZnakovniNiz= GRAMMAR             Delimiter="'" Body=[OstatakZnakovnogNiza1()] "'": String() | Delimiter='"' Body=[OstatakZnakovnogNiza2()] '"': String().,
+   OstatakZnakovnogNiza1=           IdentGrammar(First=znak1(),Tail=znak1()),
+   OstatakZnakovnogNiza2=           IdentGrammar(First=znak2(),Tail=znak2()),
+   znak1=                           {~'},
+   znak2=                           {~"},
+
+   Kvalident= GRAMMAR               Car=Ident() Raise=['.' Cdr=Kvalident(): Qualified()]: Car().,
+
+   DeklaracijaKonstante= GRAMMAR    Name=Ident() '=' Meaning=KonstIzraz():DeclareConst().,
+   KonstIzraz= GRAMMAR              Left=ProstiKonstIzraz() Raise=[Operator=relacija() Right=ProstiKonstIzraz(): Binary()]: Left().,
+   relacija= GRAMMAR                '=' | '#' | '<>' | '<' | '<=' | '>' | '>=' | 'IN'.,
+   ProstiKonstIzraz= GRAMMAR        Raise=[Sign=('+' | '-'): Signed()] Body=NizKonstSabiraka(): Body().,
+   NizKonstSabiraka= GRAMMAR        Left=KonstSabirak() Raise=[Operator=operatorSabiranja() Right=NizKonstSabiraka(): Binary()]: Left().,
+   operatorSabiranja= GRAMMAR       '+' | '-' | 'OR'.,
+   KonstSabirak= GRAMMAR            Left=KonstCinilac() [Operator=operatorMnozenja() Right=KonstSabirak(): Binary()]: Left().,
+   operatorMnozenja= GRAMMAR        '*' | '/' | 'DIV' | 'MOD' | 'AND' | '&'.,
+   KonstCinilac= GRAMMAR            Kvalident() | Broj() | ZnakovniNiz() | Skup() | '(' Body=KonstIzraz() ')': Body() | 'NOT' Body=KonstCinilac(): Not().,
+   Skup= GRAMMAR                    Type=[Kvalident()] '{' Body=[NizElemenata()] '}': Set().,
+   NizElemenata= GRAMMAR            Car=Element() Raise=[',' Cdr=NizElemenata(): Cons()]: Car().,
+   Element= GRAMMAR                 Left=KonstIzraz() Raise=['..' Right=KonstIzraz(): Interval()]: Left().
+   )
+
+Load(
+   DeklaracijaTipa= GRAMMAR         Name=Ident() '=' Meaning=Tip(): DeclareType().,
+   Tip= GRAMMAR                     ProstiTip() | NizovniTip() | SlogovniTip() | SkupovniTip() | PokazivackiTip() | ProcedurniTip().,
+   ProstiTip= GRAMMAR               Kvalident() | Nabrajanje() | PodIntervalniTip().,
+   Nabrajanje= GRAMMAR              '(' Index=ListaIdentifikatora() ')': Ordinal().,
+   ListaIdentifikatora= GRAMMAR     Car=Ident() Raise=[',' Cdr=ListaIdentifikatora(): Cons()]: Car().,
+   PodIntervalniTip= GRAMMAR        '[' Left=KonstIzraz() '..' Right=KonstIzraz() ']': SubInterval().,
+   NizovniTip= GRAMMAR              'ARRAY' Body=NizProstihTipova() 'OF' Type=Tip(): Array().,
+   NizProstihTipova= GRAMMAR        Car=ProstiTip() Raise=[',' Cdr=NizProstihTipova(): Cons()]: Car().,
+   SlogovniTip= GRAMMAR             'RECORD' Body=NizListiPolja() 'END': Record().,
+   NizListiPolja= GRAMMAR           Car=ListaPolja() Raise=[';' Cdr=NizListiPolja(): Cons()]: Car().,
+   ListaPolja= GRAMMAR              [Body=ListaIdentifikatora() ':' Type=Tip(): Tipisation() | 'CASE' Switch=[Ident()] ':' Type=Kvalident() 'OF' Body=NizVarijanti() Else=['ELSE' Raise=NizListiPolja(): Dummy()] 'END': Case()].,
+   NizVarijanti= GRAMMAR            Car=Varijanta() Raise=['|' Cdr=NizVarijanti(): Cons()]: Car().,
+   Varijanta= GRAMMAR               Left=ListaLabelaSlucaja() ':' Right=NizListiPolja(): Variant().,
+   ListaLabelaSlucaja= GRAMMAR      Car=LabeleSlucaja() Raise=[',' Cdr=ListaLabelaSlucaja(): Cons()]:Car().,
+   LabeleSlucaja= GRAMMAR           Left=KonstIzraz() Raise=['..' Right=KonstIzraz(): Interval()]: Left().,
+   SkupovniTip= GRAMMAR             'SET' 'OF' Type=ProstiTip(): Set().,
+   PokazivackiTip= GRAMMAR          'POINTER' 'TO' Type=Tip(): Pointer().,
+   ProcedurniTip= GRAMMAR           'PROCEDURE' Type=[ListaFormalnihTipova()]: Procedure().,
+   ListaFormalnihTipova= GRAMMAR    '(' List=[NizFormalnihTipova()] ')' Raise=[':' Type=Kvalident(): Function()]: Procedure().,
+   NizFormalnihTipova= GRAMMAR      Car=('VAR' Type=FormalniTip(): Variable() | FormalniTip()) Raise=[',' Cdr=NizFormalnihTipova(): Cons()]: Car().,
+
+   DeklaracijaPromenljive= GRAMMAR  Name=ListaIdentifikatora() ':' Type=Tip(): DeclareVar().,
+
+   Oznaka= GRAMMAR                  Body=Kvalident() Operator=[OstatakOznake()]: Unary().,
+   OstatakOznake= GRAMMAR           Car=('.' Field=Ident(): Record() | '[' Index=ListaIzraza() ']': Array() | '^': Pointer()) Raise=[Cdr=OstatakOznake(): Cons()]: Car().,
+   ListaIzraza= GRAMMAR             Car=Izraz() Raise=[',' Cdr=ListaIzraza(): Cons()]: Car().,
+   Izraz= GRAMMAR                   Left=ProstIzraz() Raise=[Operator=relacija() Right=ProstIzraz(): Binary()]: Left().,
+   ProstIzraz= GRAMMAR              Raise=[Sign=('+' | '-'): Signed()] Body=NizSabiraka(): Body().,
+   NizSabiraka= GRAMMAR             Left=Sabirak() Raise=[Operator=operatorSabiranja() Right=NizSabiraka(): Binary()]: Left().,
+   Sabirak= GRAMMAR                 Left=Cinilac() Raise=[Operator=operatorMnozenja() Right=Sabirak(): Binary()]: Left().,
+   Cinilac= GRAMMAR                 Broj() | ZnakovniNiz() | Skup() | Name=Oznaka() List=[StvarniParametri()]: Function()
+                                    | '(' Body=Izraz() ')': Body() | 'NOT' Body=Cinilac(): Not().,
+   StvarniParametri= GRAMMAR        '(' Raise=[ListaIzraza()] ')': Dummy().,
+
+   Iskaz= GRAMMAR                   [DodelaVrednosti() | PozivProcedure() | IskazIf() | IskazCase() | IskazWhile()
+                                    | IskazRepeat() | IskazLoop() | IskazFor() | IskazWith() | 'EXIT': Exit() | 'RETURN' Body=[Izraz()]: Return()].,
+   DodelaVrednosti= GRAMMAR         Left=Oznaka() ':=' Right=Izraz(): Assign().,
+   PozivProcedure= GRAMMAR          Name=Oznaka() List=[StvarniParametri()]: Procedure().,
+   NizIskaza= GRAMMAR               Car=Iskaz() Raise=[';' Cdr=NizIskaza(): Cons()]: Car().,
+   IskazIf= GRAMMAR                 'IF' Test=Izraz() 'THEN' Yes=NizIskaza() List=[NizELSIFa()] Else=['ELSE' Raise=NizIskaza(): Dummy()] 'END': If().,
+   NizELSIFa= GRAMMAR               'ELSIF' Test=Izraz() 'THEN' Body=NizIskaza() Raise=[Cdr=NizELSIFa(): Cons()]: Elsif().,
+   IskazCase= GRAMMAR               'CASE' Switch=Izraz() 'OF' List=NizSlucajeva() Else=['ELSE' Raise=NizIskaza(): Dummy()] 'END': Case().,
+   NizSlucajeva= GRAMMAR            Car=Slucaj() Raise=['|' Cdr=NizSlucajeva(): Case()]: Car().,
+   Slucaj= GRAMMAR                  [Left=ListaLabelaSlucaja() ':' Right=NizIskaza(): Variant()].,
+   IskazWhile= GRAMMAR              'WHILE' Test=Izraz() 'DO' Body=NizIskaza() 'END': While().,
+   IskazRepeat= GRAMMAR             'REPEAT' Body=NizIskaza() 'UNTIL' Test=Izraz(): Repeat().,
+   IskazFor= GRAMMAR                'FOR' Index=Ident() ':=' Left=Izraz() 'TO' Right=Izraz() Step=['BY' Raise=KonstIzraz(): Dummy()] 'DO' Body=NizIskaza() 'END': For().,
+   IskazLoop= GRAMMAR               'LOOP' Body=NizIskaza() 'END': Loop().,
+   IskazWith= GRAMMAR               'WITH' Name=Oznaka() 'DO' Body=NizIskaza() 'END': With().
+   )
+Interpret(
+   DeklaracijaProcedure= GRAMMAR    Header=ZaglavljeProcedure() ';' Body=Blok() Name=Ident(): DeclareProc().,
+   ZaglavljeProcedure= GRAMMAR      'PROCEDURE' Name=Ident() Body=[FormalniParametri()]: ProcHeader().,
+   Blok= GRAMMAR                    Header=[NizDeklaracija()] Body=['BEGIN' Raise=NizIskaza(): Dummy()] 'END': Block().,
+   NizDeklaracija= GRAMMAR          Car=Deklaracija() Raise=[Cdr=NizDeklaracija(): Cons()]: Car().,
+   Deklaracija= GRAMMAR             'CONST' List=NizDeklaracijaKonstante(): ConstBlock() | 'TYPE' List=NizDeklaracijaTipa(): TypeBlock() |
+                                    'VAR' List=NizDeklaracPromenljive(): VarBlock() | Raise=DeklaracijaProcedure() ';': Dummy() | Raise=DeklaracijaModula() ';': Dummy().,
+   NizDeklaracijaKonstante= GRAMMAR [Car=DeklaracijaKonstante() ';' Cdr=NizDeklaracijaKonstante(): Cons()].,
+   NizDeklaracijaTipa= GRAMMAR      [Car=DeklaracijaTipa() ';' Cdr=NizDeklaracijaTipa(): Cons()].,
+   NizDeklaracPromenljive= GRAMMAR  [Car=DeklaracijaPromenljive() ';' Cdr=NizDeklaracPromenljive(): Cons()].,
+   FormalniParametri= GRAMMAR       '(' List=[NizSekcijaFP()] ')' Type=[':' Raise=Kvalident(): Dummy()]: Procedure().,
+   NizSekcijaFP= GRAMMAR            Car=SekcijaFP() Raise=[';' Cdr=NizSekcijaFP(): Cons()]: Car().,
+   SekcijaFP= GRAMMAR               List=('VAR' List=ListaIdentifikatora(): Variable() | ListaIdentifikatora()) ':' Type=FormalniTip(): DeclareVar().,
+   FormalniTip= GRAMMAR             'ARRAY' 'OF' Type=Kvalident(): Array() | Kvalident().,
+   DeklaracijaModula= GRAMMAR       Header=('MODULE' Name=Ident() Priority=[Prioritet()] ';': ModuleHeader())
+                                    Import=NizUvoza() Export=[Izvoz()] Body=Blok() Name=Ident(): Module().,
+   Prioritet= GRAMMAR               '[' Raise=KonstIzraz() ']': Dummy().,
+   Izvoz= GRAMMAR                   'EXPORT' Raise=['QUALIFIED': Qualified()] List=ListaIdentifikatora() ';': List().,
+   NizUvoza= GRAMMAR                [Car=(Raise=['FROM' Name=Ident(): Qualified()] 'IMPORT' List=ListaIdentifikatora(): List()) ';' Raise=[Cdr=NizUvoza(): Cons()]: Car()].,
+   DefinicioniModul= GRAMMAR        Header=('DEFINITION' 'MODULE' Name=Ident() ';': ModuleHeader()) Import=NizUvoza() Export=[Izvoz()] Body=NizDefinicija() 'END' Name=Ident() '.': DefModule().,
+   NizDefinicija= GRAMMAR           [Car=Definicija() Cdr=NizDefinicija(): Cons()].,
+   Definicija= GRAMMAR              'CONST' Body=NizDeklaracijaKonstante(): DeclareConst() | 'TYPE' Body=NizDefinicijaTipa(): DeclareType()
+                                    | 'VAR' Body=NizDeklaracPromenljive(): DeclareVar() | Raise=ZaglavljeProcedure() ';': Dummy().,
+   NizDefinicijaTipa= GRAMMAR       [Car=(Name=Ident() Meaning=['=' Raise=Tip(): Dummy()]: DeclareType()) ';' Cdr=NizDefinicijaTipa(): Cons()].,
+   ProgramskiModul= GRAMMAR         'MODULE' Header=(Name=Ident() Priority=[Prioritet()] ';': ModuleHeader()) Import=NizUvoza() Body=Blok() Name=Ident() '.': Program().,
+   JedinicaZaPrevodjenje= GRAMMAR   DefinicioniModul() | Raise=['IMPLEMENTATION': Implementation()] Body=ProgramskiModul(): Body().,
+
+   ParseM2= Parse(
+      Grammar=GRAMMAR Struct=JedinicaZaPrevodjenje(): Quote().,
+      Comment=LexSeq(
+         Property=Discard(),
+         Grammar="(*",
+         Next=LexSeq(
+            Property=Discard(),
+            Grammar=RestOfComment(),
+            Next=EndSeq(
+               Struct=Dummy())))),
+   RestOfComment=LexSeq(
+      Property=Discard(),
+      Grammar=IdentGrammar(
+         First=CommentChars(),
+         Tail=CommentChars()),
+      Next=Choice(
+         Grammar=LexSeq(
+            Property=Discard(),
+            Grammar="*)",
+            Next=EndSeq(
+               Struct=Dummy())),
+         Next=LexSeq(
+            Property=Discard(),
+            Grammar='*',
+            Next=LexSeq(
+               Property=Discard(),
+               Grammar={~)},
+               Next=RestOfComment())))),
+   CommentChars= {~*}
+   )
+

@@ -1,0 +1,13 @@
+DEFINITION MODULE ParseLow;
+
+VAR
+	buildTree:BOOLEAN;
+
+PROCEDURE ParsePrimitive;
+PROCEDURE ParseTerminalPrimitive;
+PROCEDURE ParseAttributePrimitive(valuedProperty:BOOLEAN);
+PROCEDURE ParseNonTerminal;
+PROCEDURE ParseChoice;
+PROCEDURE ParseOption;
+
+END ParseLow.

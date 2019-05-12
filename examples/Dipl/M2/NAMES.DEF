@@ -1,0 +1,24 @@
+DEFINITION MODULE Names;
+
+FROM Machine IMPORT link, closure, handlerType;
+
+PROCEDURE DefName(dp:link):ADDRESS;
+PROCEDURE DefEntry(dp:link):closure;
+PROCEDURE SetDefEntry(dp:link; newEntry:closure);
+PROCEDURE FindWord(wd:ARRAY OF CHAR):link;
+
+PROCEDURE NewDictionary;
+PROCEDURE OldDictionary;
+
+PROCEDURE DefineWord(VAR newDef:link; name:ARRAY OF CHAR; wordMeaning:closure);
+PROCEDURE AddPrimWord(VAR newDef:link; name:ARRAY OF CHAR;
+								handler:handlerType);
+PROCEDURE AddArgument(VAR worDef:link; wordName:ARRAY OF CHAR);
+PROCEDURE AddAtom(VAR worDef:link; wordName:ARRAY OF CHAR);
+PROCEDURE vList;
+
+VAR
+	wParent, wString, wMeaning, wName, wEntry, wUndefined:link;
+END Names.
+
+

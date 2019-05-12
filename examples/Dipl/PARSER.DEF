@@ -1,0 +1,11 @@
+DEFINITION MODULE Parser;
+
+FROM Machine IMPORT link, closure;
+
+VAR
+	wParse:link;
+
+PROCEDURE Parse;
+
+END Parser.
+

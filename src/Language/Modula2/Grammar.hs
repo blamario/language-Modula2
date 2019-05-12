@@ -190,7 +190,7 @@ grammar g@Modula2Grammar{..} = g{
    expression = simpleExpression
                 <|> wrap (flip Abstract.relation <$> simpleExpression <*> relation <*> simpleExpression)
                 <?> "expression",
-   simpleExpression = 
+   simpleExpression =
       (wrap (Abstract.positive <$ operator "+" <*> term) <|> wrap (Abstract.negative <$ operator "-" <*> term :: Parser (Modula2Grammar l NodeWrap) Text (Abstract.Expression l l NodeWrap NodeWrap)) <|> term)
       <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> term))),
    term = factor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> factor))),
@@ -199,7 +199,7 @@ grammar g@Modula2Grammar{..} = g{
                   <|> set
                   <|> Abstract.read <$> wrap designator
                   <|> Abstract.functionCall <$> wrap designator <*> actualParameters
-                  <|> (Abstract.not <$ keyword "NOT" <*> factor :: Parser (Modula2Grammar l NodeWrap) Text (Abstract.Expression l l NodeWrap NodeWrap)))
+                  <|> (Abstract.not <$ (operator "~" <|> keyword "NOT") <*> factor))
             <|> parens expression,
    actualParameters = parens (sepBy expression (delimiter ",")),
    statement = assignment <|> procedureCall <|> ifStatement <|> caseStatement 

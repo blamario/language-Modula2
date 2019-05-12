@@ -124,8 +124,8 @@ instance Abstract.CoWirthy Language where
    coDeclaration (ProcedureDeclaration heading body) = Just (Abstract.procedureDeclaration heading body)
    coDeclaration ModuleDeclaration{} = Nothing
 
---   coType (TypeReference q) = Just (Abstract.typeReference q)
---   coType (ProcedureType params) = Just (Abstract.procedureType params)
+   coType (TypeReference q) = Just (Abstract.typeReference q)
+   coType (ProcedureType params) = Just (Abstract.procedureType params)
    coType (PointerType destination) = Just (Abstract.pointerType destination)
    coType _ = Nothing
 

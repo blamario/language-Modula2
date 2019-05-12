@@ -1,0 +1,97 @@
+Ident = slovo [NizAlfaNum].
+NizAlfaNum = (slovo | cifra) [NizAlfaNum].
+Broj = CeoBroj | RealanBroj.
+CeoBroj = DecimalniBroj | OktalniBroj | HexadecimalniBroj.
+DecimalniBroj = cifra [DecimalniBroj].
+OktalniBroj = oktalnaCifra ('B' | 'C' | OktalniBroj).
+HexadecimalniBroj = cifra [NizHexadecimalnihCifara] 'H'.
+NizHexadecimalnihCifara = hexadecimalnaCifra [NizHexadecimalnihCifara].
+
+ZnakovniNiz = "'" OstatakZnakovnogNiza "'"| '"' OstatakZnakovnogNiza '"'.
+OstatakZnakovnogNiza = [znak OstatakZnakovnogNiza].
+Kvalident = Ident ['.' Kvalident].
+
+DeklaracijaKonstante = Ident '=' KonstIzraz.
+KonstIzraz = ProstiKonstIzraz [relacija ProstiKonstIzraz].
+relacija = '=' | '#' | '<>' | '<' | '<=' | '>' | '>=' | 'IN'.
+ProstiKonstIzraz = ['+' | '-'] NizKonstSabiraka.
+NizKonstSabiraka = KonstSabirak [operatorSabiranja NizKonstSabiraka].
+operatorSabiranja = '+' | '-' | 'OR'.
+KonstSabirak = KonstCinilac [operatorMnozenja KonstSabirak].
+operatorMnozenja = '*' | '/' | 'DIV' | 'MOD' | 'AND' | '&'.
+KonstCinilac = Kvalident | Broj | ZnakovniNiz | Skup | '(' KonstIzraz ')' | 'NOT' KonstCinilac.
+Skup = [Kvalident] '{' [NizElemenata] '}'.
+NizElemenata = Element [',' NizElemenata].
+Element = KonstIzraz ['..' KonstIzraz].
+
+DeklaracijaTipa = Ident '=' Tip.
+Tip = ProstiTip | NizovniTip | SlogovniTip | SkupovniTip | PokazivackiTip | ProcedurniTip.
+ProstiTip = Kvalident | Nabrajanje | PodIntervalniTip.
+Nabrajanje = '(' ListaIdentifikatora ')'.
+ListaIdentifikatora = Ident [',' ListaIdentifikatora].
+PodIntervalniTip = '[' KonstIzraz '..' KonstIzraz ']'.
+NizovniTip = 'ARRAY' NizProstihTipova 'OF' Tip.
+NizProstihTipova = ProstiTip [',' NizProstihTipova].
+SlogovniTip = 'RECORD' NizListePolja 'END'.
+NizListiPolja = ListaPolja [';' NizListiPolja].
+ListaPolja = [ListaIdentifikatora ':' Tip | 'CASE' [Ident] ':' Kvalident 'OF' NizVarijanti ['ELSE' NizListePolja] 'END'].
+NizVarijanti = Varijanta ['|' NizVarijanti].
+Varijanta = ListaLabelaSlucaja ':' NizListePolja.
+ListaLabelaSlucaja = LabeleSlucaja [',' ListaLabelaSlucaja].
+LabeleSlucaja = KonstIzraz ['..' KonstIzraz].
+SkupovniTip = 'SET' 'OF' ProstiTip.
+PokazivackiTip = 'POINTER' 'TO' Tip.
+ProcedurniTip = 'PROCEDURE' [ListaFormalnihTipova].
+ListaFormalnihTipova = '(' [NizFormalnihTipova] ')' [':' Kvalident].
+NizFormalnihTipova = ['VAR'] FormalniTip [',' NizFormalnihTipova].
+
+DeklaracijaPromenljive = ListaIdentifikatora ':' Tip.
+
+Oznaka = Kvalident [OstatakOznake].
+OstatakOznake = ('.' Ident | '[' ListaIzraza ']' | '^') [OstatakOznake].
+ListaIzraza = Izraz [',' ListaIzraza].
+Izraz = ProstIzraz [relacija ProstIzraz].
+ProstIzraz = ['+' | '-'] NizSabiraka.
+NizSabiraka = Sabirak [operatorSabiranja NizSabiraka].
+Sabirak = Cinilac [operatorMnozenja Sabirak].
+Cinilac = Broj | ZnakovniNiz | Skup | Oznaka[StvarniParametri] | '(' Izraz ')' | 'NOT' Cinilac.
+StvarniParametri = '(' [ListaIzraza] ')'.
+
+Iskaz = [DodelaVrednosti | PozivProcedure | IskazIf | IskazCase | IskazWhile 
+      | IskazRepeat | IskazLoop | IskazFor | IskazWith | 'EXIT' | 'RETURN' [Izraz]].
+DodelaVrednosti = Oznaka ':=' Izraz.
+PozivProcedure = Oznaka [StvarniParametri].
+NizIskaza = Iskaz [';' NizIskaza].
+IskazIf = 'IF' Izraz 'THEN' NizIskaza [NizELSIFa] [ELSE NizIskaza] END.
+NizELSIFa = ELSIF Izraz THEN NIZIskaza [NizELSIFa].
+IskazCase = 'CASE' Izraz 'OF' NizSlucajeva [ELSE NizIskaza] END.
+NizSlucajeva = Slucaj ['|' NizSlucajeva].
+Slucaj = [ListaLabeleSlucaja ':' NizIskaza].
+IskazWhile = 'WHILE' Izraz 'DO' NizIskaza END.
+IskazRepeat = 'REPEAT' NizIskaza 'UNTIL' Izraz.
+IskazFor = 'FOR' Ident ':=' Izraz 'TO' Izraz ['BY' KonstIzraz] 'DO' NizIskaza 'END'.
+IskazLoop = 'LOOP' NizIskaza 'END'.
+IskazWith = 'WITH' Oznaka 'DO' NizIskaza 'END'.
+
+DeklaracijaProcedure = ZaglavljeProcedure ';' Blok Ident.
+ZaglavljeProcedure = 'PROCEDURE' Ident [FormalniParametri].
+Blok = [Deklaracija] ['BEGIN' NizIskaza] 'END'.
+Deklaracija = 'CONST' NizDeklaracijaKonstante | 'TYPE' NizDeklaracijaTipa |
+      'VAR' NizDeklaracijaPromenljive | DeklaracijaProcedure ';' | DeklaracijaModula ';'.
+NizDeklaracijaKonstante = [DeklaracijaKonstante ';' NizDeklaracijaKonstante].
+NizDeklaracijaTipa = [DeklaracijaTipa ';' NizDeklaracijaTipa].
+NizDeklaracijaPromenljive = [DeklaracijaPromenljive ';' NizDeklaracijaPromenljive].
+FormalniParametri = '(' [NizSekcijaFP] ')' [':' Kvalident].
+NizSekcijaFP = SekcijaFP [';' NizSekcijaFP].
+SekcijaFP = ['VAR'] ListaIdentifikatora ':' FormalniTip.
+FormalniTip = ['ARRAY' 'OF'] Kvalident.
+DeklaracijaModula = 'MODULE' Ident [Prioritet] ';' NizUvoza [Izvoz] Blok Ident.
+Prioritet = '[' KonstIzraz ']'.
+Izvoz = 'EXPORT' ['QUALIFIED'] ListaIdentifikatora ';'.
+NizUvoza = [['FROM' Ident] 'IMPORT' ListaIdentifikatora ';' NizUvoza].
+DefinicioniModul = 'DEFINITION' 'MODULE' Ident ';' NizUvoza [Izvoz] NizDefinicija END Ident '.'.
+NizDefinicija = [Definicija NizDefinicija].
+Definicija = 'CONST' NizDeklaracijaKonstante | 'TYPE' NizDefinicijaTipa | 'VAR' NizDeklaracijaPromenljive | ZaglavljeProcedure ';'.
+NizDefinicijaTipa = [Ident ['=' Tip] ';' NizDefinicijaTipa].
+ProgramskiModul = 'MODULE' Ident [Prioritet] ';' NizUvoza Blok Ident '.'.
+JedinicaZaPrevodjenje = DefinicioniModul | ['IMPLEMENTATION'] ProgramskiModul.

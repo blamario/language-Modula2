@@ -11,6 +11,7 @@ import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty((:|)), fromList, toList)
 import qualified Data.Text as Text
 import Data.Text.Prettyprint.Doc
+import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import Numeric (showHex, showOct)
 import Transformation.Deep as Deep (Product(Pair))
 
@@ -124,6 +125,8 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
    pretty (RecordType fields) = vsep ["RECORD",
                                        indent 3 (vsep $ punctuate semi $ pretty <$> toList fields),
                                        "END"]
+   pretty (ProcedureType parameters) = "PROCEDURE" <+> adjust (pretty parameters)
+      where adjust = pretty . Text.replace " : " "" . Text.replace ";" "," . renderStrict . layoutCompact
    pretty ty = foldMap pretty (Abstract.coType ty :: Maybe (Oberon.Type Oberon.Language l Identity Identity))
 
 instance Pretty (QualIdent l) where
