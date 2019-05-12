@@ -34,11 +34,8 @@ data Modula2Grammar l f p = Modula2Grammar {
    constantDefinition :: p (Abstract.Definition l l f f),
    constExpression :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    relation :: p Abstract.RelOp,
-   simpleConstExpr :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    addOperator :: p (BinOp l f),
-   constTerm :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    mulOperator :: p (BinOp l f),
-   constFactor :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    set :: p (Abstract.Expression l l f f),
    element :: p (Abstract.Element l l f f),
    typeDeclaration :: p (Abstract.Declaration l l f f),
@@ -125,28 +122,18 @@ grammar g@Modula2Grammar{..} = g{
                          <* delimiter "=" <*> constExpression,
    constantDefinition = Abstract.constantDefinition <$> (Abstract.identDef <$> ident)
                         <* delimiter "=" <*> constExpression,
-   constExpression = simpleConstExpr
-                     <|> wrap (flip Abstract.relation <$> simpleConstExpr <*> relation <*> simpleConstExpr),
+   constExpression = expression,
    relation = Abstract.Equal <$ operator "=" <|> Abstract.Unequal <$ (operator "#" <|> operator "<>")
               <|> Abstract.Less <$ operator "<" <|> Abstract.LessOrEqual <$ operator "<=" 
               <|> Abstract.Greater <$ operator ">" <|> Abstract.GreaterOrEqual <$ operator ">=" 
               <|> Abstract.In <$ keyword "IN",
-   simpleConstExpr =
-      (wrap (Abstract.positive <$ operator "+" <*> constTerm <|> Abstract.negative <$ operator "-" <*> constTerm) <|> constTerm)
-      <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> constTerm))),
    addOperator = BinOp . wrapBinary 
                  <$> (Abstract.add <$ operator "+" <|> Abstract.subtract <$ operator "-" 
                       <|> Abstract.or <$ keyword "OR"),
-   constTerm = constFactor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> constFactor))),
    mulOperator = BinOp . wrapBinary
                  <$> (Abstract.multiply <$ operator "*" <|> Abstract.divide <$ operator "/"
                       <|> Abstract.integerDivide <$ keyword "DIV" <|> Abstract.modulo <$ keyword "MOD" 
                       <|> Abstract.and <$ (operator "&" <|> keyword "AND")),
-   constFactor = wrap (Abstract.read <$> wrap (Abstract.variable <$> qualident)
-                       <|> number
-                       <|> Abstract.string <$> string_prod <|> set
-                       <|> Abstract.not <$ (operator "~" <|> keyword "NOT") <*> constFactor)
-                 <|> parens constExpression,
    set = Abstract.set <$> optional qualident <*> braces (sepBy (wrap element) (delimiter ",")),
    element = Abstract.element <$> expression
              <|> Abstract.range <$> expression <* delimiter ".." <*> expression,
@@ -163,7 +150,7 @@ grammar g@Modula2Grammar{..} = g{
       Abstract.arrayType <$ keyword "ARRAY" <*> sepBy1 (wrap simpleType) (delimiter ",") <* keyword "OF" <*> wrap type_prod,
    recordType = Abstract.recordType <$ keyword "RECORD" <*> fieldListSequence <* keyword "END",
    fieldListSequence = sepByNonEmpty (wrap fieldList) (delimiter ";"),
-   fieldList = Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod
+   fieldList = (Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod :: Parser (Modula2Grammar l NodeWrap) Text (Abstract.FieldList l l NodeWrap NodeWrap))
                <|> Abstract.caseFieldList <$ keyword "CASE" <*> optional (ident <* delimiter ":") <*> qualident
                                           <* keyword "OF" <*> sepByNonEmpty (wrap variant) (delimiter "|")
                                           <*> moptional (toList <$ keyword "ELSE" <*> fieldListSequence) <* keyword "END"
@@ -191,7 +178,7 @@ grammar g@Modula2Grammar{..} = g{
                 <|> wrap (flip Abstract.relation <$> simpleExpression <*> relation <*> simpleExpression)
                 <?> "expression",
    simpleExpression =
-      (wrap (Abstract.positive <$ operator "+" <*> term) <|> wrap (Abstract.negative <$ operator "-" <*> term :: Parser (Modula2Grammar l NodeWrap) Text (Abstract.Expression l l NodeWrap NodeWrap)) <|> term)
+      (wrap (Abstract.positive <$ operator "+" <*> term) <|> wrap (Abstract.negative <$ operator "-" <*> term) <|> term)
       <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> term))),
    term = factor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> factor))),
    factor = wrap (number
