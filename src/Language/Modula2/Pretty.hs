@@ -137,10 +137,10 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (A
          Pretty (FieldList Language l Identity Identity) where
    pretty (CaseFieldList localName name variants fallback) =
      vsep (["CASE" <+> maybe id ((<+>) . (<+> ":") . pretty) localName (pretty name) <+> "OF"]
-           <> punctuate "|" (pretty <$> toList variants)
-           <> if null fallback then []
-              else ["ELSE" <#>
-                    indent 3 (vsep $ punctuate semi $ pretty . runIdentity <$> fallback)]
+           <> punctuate' "| " (pretty <$> toList variants)
+           <> (if null fallback then []
+               else ["ELSE" <#>
+                     indent 3 (vsep $ punctuate semi $ pretty . runIdentity <$> fallback)])
            <> ["END"])
    pretty (FieldList names t) = hsep (punctuate comma $ pretty <$> toList names) <+> ":" <+> pretty t
    pretty EmptyFieldList = mempty
@@ -183,5 +183,9 @@ instance Language.Oberon.Abstract.Oberon Language where
 prettyBody :: Pretty (Abstract.StatementSequence l l Identity Identity) =>
               Identity (Abstract.StatementSequence l l Identity Identity) -> Doc ann
 prettyBody (Identity statements) = indent 3 (pretty statements)
+
+punctuate' :: Doc ann -> [Doc ann] -> [Doc ann]
+punctuate' p [] = []
+punctuate' p (x:xs) = x : ((p <>) <$> xs)
 
 a <#> b = vsep [a, b]
