@@ -265,7 +265,7 @@ grammar g@Modula2Grammar{..} = g{
                       name <- ident
                       con name <$> optional priority <* delimiter ";" <*> many import_prod
                                <*> wrap block <* lexicalToken (string name) <* delimiter ".",
-   compilationUnit = lexicalWhiteSpace *> (definitionModule <|> programModule) <* optional (char '\x1a')
+   compilationUnit = lexicalWhiteSpace *> (definitionModule <|> programModule) <* skipMany (char '\x1a' *> lexicalWhiteSpace)
    }
 
 newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l l f f)
