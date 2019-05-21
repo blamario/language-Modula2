@@ -232,7 +232,7 @@ grammar g@Modula2Grammar{..} = g{
                                      <|> keyword "TYPE" *> many (wrap typeDeclaration <* delimiter ";")
                                      <|> keyword "VAR" *> many (wrap variableDeclaration <* delimiter ";")
                                      <|> (:[]) <$> (wrap procedureDeclaration <* delimiter ";"
-                                                    <|> wrap moduleDeclaration))
+                                                    <|> wrap moduleDeclaration <* delimiter ";"))
                          <?> "declarations",
    formalParameters = Abstract.formalParameters <$> parens (sepBy (wrap fPSection) (delimiter ";"))
                       <*> optional (delimiter ":" *> qualident),
