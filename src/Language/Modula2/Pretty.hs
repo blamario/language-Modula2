@@ -105,7 +105,8 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.QualIdent l)) =>
          Pretty (Precedence (Expression Language l Identity Identity)) where
-   pretty (Precedence p (Set ty elements)) = pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
+   pretty (Precedence _ (Set ty elements)) = pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
+   pretty (Precedence _ (CharCode c)) = pretty (showOct c "") <> "C"
    pretty (Precedence p e) =
       foldMap (pretty . Precedence p) (Abstract.coExpression e :: Maybe (Oberon.Expression Oberon.Language l Identity Identity))
 

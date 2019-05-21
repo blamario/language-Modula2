@@ -103,6 +103,7 @@ instance Abstract.Wirthy Language where
    real = Real
    relation = Relation
    string = String
+   charCode = CharCode
 
    element = Oberon.Element
    range = Oberon.Range
@@ -156,6 +157,7 @@ instance Abstract.CoWirthy Language where
    coExpression (Integer n) = Just (Abstract.integer n)
    coExpression (Real r) = Just (Abstract.real r)
    coExpression (String s) = Just (Abstract.string s)
+   coExpression (CharCode c) = Just (Abstract.charCode c)
    coExpression Nil = Just Abstract.nil
    coExpression Set{} = Nothing
    coExpression (Read var) = Just (Abstract.read var)
@@ -272,6 +274,7 @@ data Expression λ l f' f = Relation Oberon.RelOp (f (Abstract.Expression l l f'
                          | Integer Text
                          | Real Text
                          | String Text
+                         | CharCode Int
                          | Nil 
                          | Set (Maybe (Abstract.QualIdent l)) [f (Abstract.Element l l f' f')]
                          | Read (f (Abstract.Designator l l f' f'))

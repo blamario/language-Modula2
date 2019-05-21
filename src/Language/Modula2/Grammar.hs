@@ -6,7 +6,8 @@ import Control.Monad (guard, void)
 import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
 import Data.List.NonEmpty (NonEmpty, toList)
 import Data.Monoid ((<>), Endo(Endo, appEndo))
-import Data.Text (Text)
+import Data.Text (Text, unpack)
+import Numeric (readOct)
 import Text.Grampa
 import Text.Grampa.ContextFree.LeftRecursive (Parser)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
@@ -105,10 +106,11 @@ grammar :: forall l. Abstract.Modula2 l
 grammar g@Modula2Grammar{..} = g{
    ident = identifier,
    number = integer <|> real,
-   integer = Abstract.integer 
-             <$> lexicalToken (digit <> takeCharsWhile isDigit
-                               <|> octalDigit <> takeCharsWhile isOctDigit <> (string "B" <|> string "C")
-                               <|> digit <> takeCharsWhile isHexDigit <> string "H"),
+   integer = lexicalToken (Abstract.integer <$> (digit <> takeCharsWhile isDigit)
+                           <|> Abstract.integer <$> (octalDigit <> takeCharsWhile isOctDigit <> string "B")
+                           <|> Abstract.charCode . fst . head . readOct . unpack
+                           <$> (octalDigit <> takeCharsWhile isOctDigit <* string "C")
+                           <|> Abstract.integer <$> (digit <> takeCharsWhile isHexDigit <> string "H")),
    real = Abstract.real <$> lexicalToken (digit <> takeCharsWhile isDigit <> string "."
                                           <> takeCharsWhile isDigit <> moptional scaleFactor),
    scaleFactor = string "E" <> moptional (string "+" <|> string "-") <> digit <> takeCharsWhile isDigit,
