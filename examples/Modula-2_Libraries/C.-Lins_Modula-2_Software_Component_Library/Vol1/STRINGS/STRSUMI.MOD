@@ -1,4 +1,4 @@
-IMPLEMENTATION MODULE StrSUMI; 
+IMPLEMENTATION MODULE StringSUMI; 
 (*==========================================================
     Version  : 1.00  21 May 1989  C. Lins
     Compiler : TopSpeed Modula-2 Compiler

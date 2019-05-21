@@ -2,7 +2,7 @@
 11.2 Bounded Map Implementation
 *)
 
-IMPLEMENTATION MODULE MapSBMIH;
+IMPLEMENTATION MODULE MapSBMIHash;
 (*==============================================================
     Version  : 2.0 16 Sep 1990 C. Lins
     Compiler : Generic pc Modula-2
@@ -771,4 +771,4 @@ BEGIN
   SetHandler(noerr, NullHandler);
   mapError := noerr;
   NullMap := NIL;
-END MapSBMIHash.
+END MapSBMIHash.

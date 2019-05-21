@@ -462,7 +462,7 @@ BEGIN
 END ExtentOf;
 (*-------------------------*)
 
-PROCEDURE IsPresen (    theTable   : HashTable     (*--in   *);
+PROCEDURE IsPresent(    theTable   : HashTable     (*--in   *);
                         theKey     : Key           (*--in   *);
                         found      : FoundProc     (*--in   *);
                         notFound   : NotFoundProc  (*--in   *));

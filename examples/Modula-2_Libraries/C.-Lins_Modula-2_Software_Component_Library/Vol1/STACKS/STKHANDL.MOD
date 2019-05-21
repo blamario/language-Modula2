@@ -19,7 +19,7 @@ FROM IO IMPORT
 
 PROCEDURE WriteHandler (    theModule 	: CARDINAL;
 	  	theOperation: Operations;
-	  	theException: Exceptions;
+	  	theException: Exceptions);
 
 BEGIN
   WrStr('### Error "');
