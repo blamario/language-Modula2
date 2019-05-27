@@ -7,7 +7,7 @@ import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace
 import Data.List.NonEmpty (NonEmpty, toList)
 import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
-import Numeric (readOct)
+import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
 import Text.Grampa.ContextFree.LeftRecursive (Parser)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
@@ -106,14 +106,15 @@ grammar :: forall l. Abstract.Modula2 l
 grammar g@Modula2Grammar{..} = g{
    ident = identifier,
    number = integer <|> real,
-   integer = lexicalToken (Abstract.integer <$> (digit <> takeCharsWhile isDigit)
-                           <|> Abstract.integer <$> (octalDigit <> takeCharsWhile isOctDigit <> string "B")
+   integer = lexicalToken (Abstract.integer . fst . head
+                           <$> (readDec . unpack <$> takeCharsWhile1 isDigit
+                                <|> readOct . unpack <$> takeCharsWhile1 isOctDigit <* string "B"
+                                <|> readHex . unpack <$> (digit <> takeCharsWhile isHexDigit) <* string "H")
                            <|> Abstract.charCode . fst . head . readOct . unpack
-                           <$> (octalDigit <> takeCharsWhile isOctDigit <* string "C")
-                           <|> Abstract.integer <$> (digit <> takeCharsWhile isHexDigit <> string "H")),
-   real = Abstract.real <$> lexicalToken (digit <> takeCharsWhile isDigit <> string "."
-                                          <> takeCharsWhile isDigit <> moptional scaleFactor),
-   scaleFactor = string "E" <> moptional (string "+" <|> string "-") <> digit <> takeCharsWhile isDigit,
+                               <$> (octalDigit <> takeCharsWhile isOctDigit <* string "C")),
+   real = Abstract.real . fst . head . readFloat . unpack
+          <$> lexicalToken (takeCharsWhile1 isDigit <> string "." <> takeCharsWhile isDigit <> moptional scaleFactor),
+   scaleFactor = string "E" <> moptional (string "+" <|> string "-") <> takeCharsWhile1 isDigit,
    hexDigit = satisfyCharInput isHexDigit,
    digit = satisfyCharInput isDigit,
    octalDigit = satisfyCharInput isOctDigit,

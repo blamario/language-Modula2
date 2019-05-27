@@ -271,8 +271,8 @@ data Expression λ l f' f = Relation Oberon.RelOp (f (Abstract.Expression l l f'
                          | IntegerDivide (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
                          | Modulo (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
                          | And (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
-                         | Integer Text
-                         | Real Text
+                         | Integer Integer
+                         | Real Double
                          | String Text
                          | CharCode Int
                          | Nil 
