@@ -306,17 +306,14 @@ delimiter s = void (lexicalToken $ string s) <?> ("delimiter " <> show s)
 operator s = void (lexicalToken $ string s) <?> ("operator " <> show s)
 
 reservedWords :: [Text]
-reservedWords = ["AND", "ARRAY", "IMPORT", "RETURN",
-                 "BEGIN", "IN", "THEN",
-                 "BY", "TO",
-                 "CASE", "CONST", "DEFINITION", "EXPORT", "FROM", "IMPLEMENTATION", "LOOP", "TYPE",
-                 "DIV", "MOD", "MODULE", "NOT", "VAR",
-                 "DO", "WHILE",
-                 "ELSE", "OF", "WITH",
-                 "ELSIF", "OR",
-                 "END", "POINTER",
-                 "EXIT", "PROCEDURE", "QUALIFIED",
-                 "FOR", "RECORD", "SET", "UNTIL",
-                 "IF", "REPEAT"]
+reservedWords = ["AND", "ARRAY", "BEGIN", "BY",
+                 "CASE", "CONST", "DEFINITION", "DIV", "DO",
+                 "ELSE", "ELSIF", "END", "EXIT", "EXPORT", "FOR", "FROM",
+                 "IF", "IMPLEMENTATION", "IMPORT", "IN", "LOOP",
+                 "MOD", "MODULE", "NOT",
+                 "OF", "OR", "POINTER", "PROCEDURE",
+                 "QUALIFIED", "RECORD", "REPEAT", "RETURN",
+                 "SET", "THEN", "TO", "TYPE",
+                 "UNTIL", "VAR", "WHILE", "WITH"]
 
 $(Rank2.TH.deriveAll ''Modula2Grammar)
