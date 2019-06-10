@@ -121,7 +121,7 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
    pretty (ArrayType dimensions itemType) =
       "ARRAY" <+> hsep (punctuate comma $ pretty . runIdentity <$> dimensions) <+> "OF" <+> pretty itemType
    pretty (EnumerationType values) = "(" <> hsep (punctuate comma $ toList $ pretty <$> values) <> ")"
-   pretty (SubrangeType min max) = "[" <> pretty min <+> ".." <+> pretty max <> "]"
+   pretty (SubrangeType enumType min max) = foldMap pretty enumType <> "[" <> pretty min <+> ".." <+> pretty max <> "]"
    pretty (SetType memberType) = "SET" <+> "OF" <+> pretty memberType
    pretty (RecordType fields) = vsep ["RECORD",
                                        indent 3 (vsep $ punctuate semi $ pretty <$> toList fields),

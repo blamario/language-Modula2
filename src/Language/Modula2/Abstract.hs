@@ -46,7 +46,7 @@ class Wirthy l => Modula2 l where
 
    -- Type
    enumeration :: IdentList l' -> Type l l' f' f
-   subRange :: f (ConstExpression l' l' f' f') -> f (ConstExpression l' l' f' f') -> Type l l' f' f
+   subRange :: Maybe (QualIdent l') -> f (ConstExpression l' l' f' f') -> f (ConstExpression l' l' f' f') -> Type l l' f' f
    arrayType :: [f (Type l' l' f' f')] -> f (Type l' l' f' f') -> Type l l' f' f
    setType :: f (Type l' l' f' f') -> Type l l' f' f
    recordType :: NonEmpty (f (FieldList l' l' f' f')) -> Type l l' f' f

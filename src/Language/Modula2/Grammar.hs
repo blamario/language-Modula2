@@ -148,7 +148,8 @@ grammar g@Modula2Grammar{..} = g{
                 <|> subrangeType,
    enumeration = Abstract.enumeration <$> parens identList,
    identList = sepByNonEmpty (Abstract.identDef <$> ident) (delimiter ","),
-   subrangeType = brackets (Abstract.subRange <$> constExpression <* delimiter ".." <*> constExpression),
+   subrangeType = brackets (Abstract.subRange (Nothing :: Maybe (Abstract.QualIdent l)) <$> constExpression
+                            <* delimiter ".." <*> constExpression),
    arrayType =
       Abstract.arrayType <$ keyword "ARRAY" <*> sepBy1 (wrap simpleType) (delimiter ",") <* keyword "OF" <*> wrap type_prod,
    recordType = Abstract.recordType <$ keyword "RECORD" <*> fieldListSequence <* keyword "END",
