@@ -101,8 +101,8 @@ modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
 
 {- Adjusted from Report on the Programming Language Modula-2 -}
-grammar :: forall l. Abstract.Modula2 l
-        => GrammarBuilder (Modula2Grammar l NodeWrap) (Modula2Grammar l NodeWrap) Parser Text
+grammar :: forall l g. (Abstract.Modula2 l, Lexical g, LexicalConstraint Parser g Text)
+        => GrammarBuilder (Modula2Grammar l NodeWrap) g Parser Text
 grammar g@Modula2Grammar{..} = g{
    ident = identifier,
    number = integer <|> real,
@@ -154,7 +154,7 @@ grammar g@Modula2Grammar{..} = g{
       Abstract.arrayType <$ keyword "ARRAY" <*> sepBy1 (wrap simpleType) (delimiter ",") <* keyword "OF" <*> wrap type_prod,
    recordType = Abstract.recordType <$ keyword "RECORD" <*> fieldListSequence <* keyword "END",
    fieldListSequence = sepByNonEmpty (wrap fieldList) (delimiter ";"),
-   fieldList = (Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod :: Parser (Modula2Grammar l NodeWrap) Text (Abstract.FieldList l l NodeWrap NodeWrap))
+   fieldList = (Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod :: Parser g Text (Abstract.FieldList l l NodeWrap NodeWrap))
                <|> Abstract.caseFieldList <$ keyword "CASE" <*> optional (ident <* delimiter ":") <*> qualident
                                           <* keyword "OF" <*> sepByNonEmpty (wrap variant) (delimiter "|")
                                           <*> moptional (toList <$ keyword "ELSE" <*> fieldListSequence) <* keyword "END"
@@ -293,7 +293,7 @@ instance Lexical (Modula2Grammar l f) where
                                            guard (w `notElem` reservedWords)
                                            return w)
 
-wrap :: Abstract.Modula2 l => Parser (Modula2Grammar l f) Text a -> Parser (Modula2Grammar l f) Text (NodeWrap a)
+wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
 wrap = ((,) <$> getSourcePos <*>)
 
 wrapBinary :: (NodeWrap a -> NodeWrap a -> a) -> (NodeWrap a -> NodeWrap a -> NodeWrap a)
@@ -301,7 +301,7 @@ wrapBinary op a@(pos, _) b = (pos, op a b)
 
 moptional p = p <|> mempty
 
-delimiter, operator :: Abstract.Modula2 l => Text -> Parser (Modula2Grammar l f) Text ()
+delimiter, operator :: (Lexical g, LexicalConstraint Parser g Text) => Text -> Parser g Text ()
 
 delimiter s = void (lexicalToken $ string s) <?> ("delimiter " <> show s)
 operator s = void (lexicalToken $ string s) <?> ("operator " <> show s)
