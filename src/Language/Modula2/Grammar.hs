@@ -281,17 +281,19 @@ instance Show (BinOp l f) where
 
 instance Lexical (Modula2Grammar l f) where
    type LexicalConstraint p (Modula2Grammar l f) s = (s ~ Text, p ~ Parser)
-   lexicalComment = try (string "(*"
-                         *> skipMany (lexicalComment
-                                      <|> notFollowedBy (string "*)") <* anyToken <* takeCharsWhile isCommentChar)
-                         <* string "*)")
-      where isCommentChar c = c /= '*' && c /= '('
+   lexicalComment = comment
    lexicalWhiteSpace = takeCharsWhile isSpace *> skipMany (lexicalComment *> takeCharsWhile isSpace)
    isIdentifierStartChar = isLetter
    isIdentifierFollowChar = isAlphaNum
    identifierToken word = lexicalToken (do w <- word
                                            guard (w `notElem` reservedWords)
                                            return w)
+
+comment :: Parser g Text ()
+comment = try (string "(*"
+               *> skipMany (comment <|> notFollowedBy (string "*)") <* anyToken <* takeCharsWhile isCommentChar)
+               <* string "*)")
+   where isCommentChar c = c /= '*' && c /= '('
 
 wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
 wrap = ((,) <$> getSourcePos <*>)
