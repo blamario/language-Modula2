@@ -19,15 +19,15 @@ class Wirthy l => Modula2 l where
    type Export l = x | x -> l
    type Definition l = (d :: * -> (* -> *) -> (* -> *) -> *) | d -> l
    type Variant l = (v :: * -> (* -> *) -> (* -> *) -> *) | v -> l
-   
+
    -- Module
    definitionModule :: Ident -> [Import l'] -> Maybe (Export l') -> [f (Definition l' l' f' f')] -> Module l l' f' f
    implementationModule,
       programModule :: Ident -> Maybe (f (Priority l' l' f' f')) -> [Import l'] -> f (Block l' l' f' f')
                     -> Module l l' f' f
 
-   moduleExport :: Bool -> IdentList l -> Export l
-   moduleImport :: Maybe Ident -> IdentList l -> Import l
+   moduleExport :: Bool -> NonEmpty Ident -> Export l
+   moduleImport :: Maybe Ident -> NonEmpty Ident -> Import l
 
    -- Definition
    constantDefinition :: IdentDef l' -> f (ConstExpression l' l' f' f') -> Definition l l' f' f

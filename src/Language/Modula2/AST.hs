@@ -44,7 +44,7 @@ instance Abstract.Wirthy Language where
    type CaseLabels Language = Oberon.CaseLabels Language
    type Element Language = Oberon.Element Language
 
-   type IdentDef Language = Ident
+   type IdentDef Language = IdentDef Language
    type QualIdent Language = QualIdent Language
 
    -- Declaration
@@ -115,7 +115,7 @@ instance Abstract.Wirthy Language where
    dereference = Dereference
 
    -- Identifier
-   identDef = id
+   identDef = IdentDef
    nonQualIdent = QualIdent []
 
 instance Abstract.CoWirthy Language where
@@ -172,7 +172,7 @@ instance Abstract.CoWirthy Language where
 
 instance Abstract.Nameable Language where
    getProcedureName (ProcedureHeading name _) = name
-   getIdentDefName = id
+   getIdentDefName (IdentDef n) = n
    getNonQualIdentName (QualIdent [] name) = Just name
    getNonQualIdentName _ = Nothing
 
@@ -216,6 +216,8 @@ instance Abstract.Modula2 Language where
    set = Set
    qualIdent = QualIdent
 
+newtype IdentDef l = IdentDef Ident deriving (Data, Eq, Ord, Show)
+
 data Module λ l f' f = DefinitionModule Ident
                           [Abstract.Import l] (Maybe (Abstract.Export l)) [f (Abstract.Definition l l f' f')]
                      | ImplementationModule Ident (Maybe (f (Abstract.Priority l l f' f')))
@@ -223,8 +225,8 @@ data Module λ l f' f = DefinitionModule Ident
                      | ProgramModule Ident (Maybe (f (Abstract.Priority l l f' f')))
                           [Abstract.Import l] (f (Abstract.Block l l f' f'))
 
-data Import λ = Import (Maybe Ident) (Abstract.IdentList Language) deriving (Data, Show)
-data Export λ = Export Bool (Abstract.IdentList Language) deriving (Data, Show)
+data Import λ = Import (Maybe Ident) (NonEmpty Ident) deriving (Data, Show)
+data Export λ = Export Bool (NonEmpty Ident) deriving (Data, Show)
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f', Data (Abstract.Import l), Data (Abstract.Export l),
                    Data (f (Abstract.Priority l l f' f')),

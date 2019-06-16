@@ -154,7 +154,8 @@ grammar g@Modula2Grammar{..} = g{
       Abstract.arrayType <$ keyword "ARRAY" <*> sepBy1 (wrap simpleType) (delimiter ",") <* keyword "OF" <*> wrap type_prod,
    recordType = Abstract.recordType <$ keyword "RECORD" <*> fieldListSequence <* keyword "END",
    fieldListSequence = sepByNonEmpty (wrap fieldList) (delimiter ";"),
-   fieldList = (Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod :: Parser g Text (Abstract.FieldList l l NodeWrap NodeWrap))
+   fieldList = (Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod
+                :: Parser g Text (Abstract.FieldList l l NodeWrap NodeWrap))
                <|> Abstract.caseFieldList <$ keyword "CASE" <*> optional (ident <* delimiter ":") <*> qualident
                                           <* keyword "OF" <*> sepByNonEmpty (wrap variant) (delimiter "|")
                                           <*> moptional (toList <$ keyword "ELSE" <*> fieldListSequence) <* keyword "END"
@@ -182,7 +183,9 @@ grammar g@Modula2Grammar{..} = g{
                 <|> wrap (flip Abstract.relation <$> simpleExpression <*> relation <*> simpleExpression)
                 <?> "expression",
    simpleExpression =
-      (wrap (Abstract.positive <$ operator "+" <*> term) <|> wrap (Abstract.negative <$ operator "-" <*> term) <|> term)
+      (wrap (Abstract.positive <$ operator "+" <*> term)
+       <|> wrap (Abstract.negative <$ operator "-" <*> term :: Parser g Text (Abstract.Expression l l NodeWrap NodeWrap))
+       <|> term)
       <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> term))),
    term = factor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> factor))),
    factor = wrap (number
@@ -190,7 +193,8 @@ grammar g@Modula2Grammar{..} = g{
                   <|> set
                   <|> Abstract.read <$> wrap designator
                   <|> Abstract.functionCall <$> wrap designator <*> actualParameters
-                  <|> (Abstract.not <$ (operator "~" <|> keyword "NOT") <*> factor))
+                  <|> (Abstract.not <$ (operator "~" <|> keyword "NOT") <*> factor
+                       :: Parser g Text (Abstract.Expression l l NodeWrap NodeWrap)))
             <|> parens expression,
    actualParameters = parens (sepBy expression (delimiter ",")),
    statement = assignment <|> procedureCall <|> ifStatement <|> caseStatement 
@@ -250,9 +254,9 @@ grammar g@Modula2Grammar{..} = g{
                              <*> many import_prod <*> optional export <*> wrap block <* lexicalToken (string name),
    priority = brackets constExpression,
    export = Abstract.moduleExport <$ keyword "EXPORT" <*> (True <$ keyword "QUALIFIED" <|> pure False)
-            <*> identList <* delimiter ";",
+            <*> sepByNonEmpty ident (delimiter ",") <* delimiter ";",
    import_prod = Abstract.moduleImport <$> optional (keyword "FROM" *> ident)
-                 <* keyword "IMPORT" <*> identList <* delimiter ";",
+                 <* keyword "IMPORT" <*> sepByNonEmpty ident (delimiter ",") <* delimiter ";",
    definitionModule = keyword "DEFINITION" *> keyword "MODULE" *>
                       do name <- ident
                          delimiter ";"

@@ -44,15 +44,18 @@ instance (Pretty (Abstract.Priority l l Identity Identity),
        vsep (pretty <$> imports)]
       <> [vsep [pretty body, "END" <+> pretty name <> "." <> line]]
 
-instance Pretty (Import l) where
+instance Pretty (Abstract.IdentDef l) => Pretty (Import l) where
   pretty (Import origin names) =
     maybe id ((<+>) . ("FROM" <+>) . pretty) origin ("IMPORT" <+> hsep (punctuate comma $ toList $ pretty <$> names))
     <> semi
 
-instance Pretty (Export l) where
+instance Pretty (Abstract.IdentDef l) => Pretty (Export l) where
   pretty (Export qualified names) =
     "EXPORT" <+> (if qualified then ("QUALIFIED" <+>) else id) (hsep $ punctuate comma $ toList $ pretty <$> names)
     <> semi
+
+instance Pretty (IdentDef l) where
+  pretty (IdentDef name) = pretty name
 
 instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
           Pretty (Abstract.Export l), Pretty (Abstract.Import l),
