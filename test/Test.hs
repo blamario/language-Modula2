@@ -17,9 +17,9 @@ import Text.Grampa (failureDescription)
 
 import qualified Transformation.Rank2 as Rank2
 
-import Language.Modula2 (parseModule, Placed)
+import Language.Modula2 (parseModule, Placed, Version(..))
 import Language.Modula2.AST (Language, Module)
-import Language.Modula2.Pretty ()
+import qualified Language.Modula2.ISO.AST as ISO (Language)
 
 import Prelude hiding (readFile)
 
@@ -44,11 +44,13 @@ exampleTree ancestry path =
 
 prettyFile :: FilePath -> Text -> IO Text
 prettyFile path src = do
-   let parsedModule = parseModule src
+   let parsedModule = parseModule ISO src
    case parsedModule
       of Left err -> error (unpack $ failureDescription src err 4)
          Right [tree] -> return (renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
          Right trees -> error (show (length trees) ++ " ambiguous pases.")
 
 instance Pretty (Module Language Language Placed Placed) where
+   pretty m = pretty ((Identity . snd) Rank2.<$> m)
+instance Pretty (Module ISO.Language ISO.Language Placed Placed) where
    pretty m = pretty ((Identity . snd) Rank2.<$> m)

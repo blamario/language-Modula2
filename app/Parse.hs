@@ -2,13 +2,14 @@
 
 module Main where
 
-import Language.Modula2 (Placed, parseModule, resolvePosition, resolvePositions)
+import Language.Modula2 (Placed, Version(Report, ISO), SomeVersion(SomeVersion), resolvePosition, resolvePositions)
 import Language.Modula2.AST (Language, Module(..), StatementSequence, Statement, Expression)
 import qualified Language.Modula2.AST as AST
 import qualified Language.Modula2.Grammar as Grammar
-import qualified Language.Modula2.Pretty ()
-import qualified Language.Oberon.Pretty ()
+import qualified Language.Modula2.ISO.AST as ISO.AST
+import qualified Language.Modula2.ISO.Grammar as ISO.Grammar
 
+import qualified Rank2 as Rank2 (Product(Pair), snd)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Deep as Deep
 
@@ -36,6 +37,8 @@ import System.FilePath (FilePath, addExtension, combine, takeDirectory)
 
 import Prelude hiding (getLine, getContents, readFile)
 
+import Debug.Trace
+
 data GrammarMode = ModuleMode | StatementsMode | StatementMode | ExpressionMode
     deriving Show
 
@@ -44,6 +47,7 @@ data Output = Plain | Pretty Int | Tree
 
 data Opts = Opts
     { optsMode        :: GrammarMode
+    , optsVersion     :: SomeVersion
     , optsIndex       :: Int
     , optsOutput      :: Output
     , optsInclude     :: Maybe FilePath
@@ -61,6 +65,8 @@ main = execParser opts >>= main'
     p :: Parser Opts
     p = Opts
         <$> mode
+        <*> (SomeVersion Report <$ switch (long "report")
+             <|> SomeVersion ISO <$ switch (long "ISO" <> long "iso"))
         <*> (option auto (long "index" <> help "Index of ambiguous parse" <> showDefault <> value 0 <> metavar "INT"))
         <*> (Pretty <$> option auto (long "pretty" <> help "Pretty-print output" <> metavar "WIDTH")
              <|> flag' Tree (long "tree" <> help "Print the output as an abstract syntax tree")
@@ -79,42 +85,55 @@ main = execParser opts >>= main'
 
 main' :: Opts -> IO ()
 main' Opts{..} =
-    case optsFile of
-        Just file -> (if file == "-" then getContents else readFile file)
-                     >>= case optsMode
-                         of ModuleMode ->
-                              go Grammar.compilationUnit Grammar.modula2grammar file
-                            _ -> error "A file usually contains a whole module."
-
-        Nothing ->
-            forever $
-            getLine >>=
-            case optsMode of
-                ModuleMode     -> go Grammar.compilationUnit Grammar.modula2grammar "<stdin>"
-                StatementMode  -> go Grammar.statement Grammar.modula2grammar "<stdin>"
-                StatementsMode -> go Grammar.statementSequence Grammar.modula2grammar "<stdin>"
-                ExpressionMode -> \src-> case getCompose ((resolvePosition src . (resolvePositions src <$>))
-                                                          <$> Grammar.expression (parseComplete
-                                                                                  Grammar.modula2grammar src))
-                                         of Right [x] -> succeed optsOutput x
-                                            Right l -> putStrLn ("Ambiguous: " ++ show optsIndex ++ "/"
-                                                                 ++ show (length l) ++ " parses")
-                                                       >> succeed optsOutput (l !! optsIndex)
-                                            Left err -> Text.putStrLn (failureDescription src err 4)
+   case optsVersion
+   of SomeVersion Report -> process Report
+      SomeVersion ISO -> process ISO
   where
-    go :: (Show a, Pretty a, a ~ t Placed Placed,
-           Deep.Functor (Rank2.Map Grammar.NodeWrap NodeWrap) t Grammar.NodeWrap NodeWrap) =>
-          (forall p. Grammar.Modula2Grammar AST.Language Grammar.NodeWrap p -> p (t Grammar.NodeWrap Grammar.NodeWrap))
-       -> (Grammar (Grammar.Modula2Grammar AST.Language Grammar.NodeWrap) LeftRecursive.Parser Text)
-       -> String -> Text -> IO ()
-    go production grammar filename contents =
-       case getCompose (resolvePositions contents <$> production (parseComplete grammar contents))
-       of Right [x] -> succeed optsOutput x
-          Right l -> putStrLn ("Ambiguous: " ++ show optsIndex ++ "/" ++ show (length l) ++ " parses")
-                     >> succeed optsOutput (l !! optsIndex)
-          Left err -> Text.putStrLn (failureDescription contents err 4)
+     process :: Version l -> IO ()
+     process version =
+         case optsFile of
+             Just file -> (if file == "-" then getContents else readFile file)
+                          >>= case optsMode
+                              of ModuleMode
+                                    | Report <- version -> go Report Grammar.compilationUnit file
+                                    | ISO <- version -> go ISO Grammar.compilationUnit file
+                                 _ -> error "A file usually contains a whole module."
+
+             Nothing | Report <- version ->
+                 forever $
+                 getLine >>=
+                 case optsMode of
+                     ModuleMode     -> go Report Grammar.compilationUnit "<stdin>"
+                     StatementMode  -> go Report Grammar.statement "<stdin>"
+                     StatementsMode -> go Report Grammar.statementSequence "<stdin>"
+                     ExpressionMode -> go Report ((snd <$>) . Grammar.expression) "<stdin>"
+             Nothing | ISO <- version ->
+                 forever $
+                 getLine >>=
+                 case optsMode of
+                     ModuleMode     -> go ISO Grammar.compilationUnit "<stdin>"
+                     StatementMode  -> go ISO Grammar.statement "<stdin>"
+                     StatementsMode -> go ISO Grammar.statementSequence "<stdin>"
+                     ExpressionMode -> go ISO ((snd <$>) . Grammar.expression) "<stdin>"
+     go :: (Show a, Pretty a, a ~ t l l Placed Placed,
+            Deep.Functor (Rank2.Map Grammar.NodeWrap NodeWrap) (t l l) Grammar.NodeWrap NodeWrap) =>
+           Version l
+        -> (forall p. Functor p => Grammar.Modula2Grammar l Grammar.NodeWrap p -> p (t l l Grammar.NodeWrap Grammar.NodeWrap))
+        -> String -> Text -> IO ()
+     go Report production filename contents =
+        report contents (getCompose $ resolvePositions contents
+                         <$> production (parseComplete Grammar.modula2grammar contents))
+     go ISO production filename contents =
+        report contents (getCompose $ resolvePositions contents
+                         <$> production (Rank2.snd $ parseComplete (ISO.Grammar.modula2ISOgrammar) contents))
+     report :: (Pretty a, Show a) => Text -> ParseResults [a] -> IO ()
+     report _ (Right [x]) = succeed optsOutput x
+     report _ (Right l) = putStrLn ("Ambiguous: " ++ show optsIndex ++ "/" ++ show (length l) ++ " parses")
+                          >> succeed optsOutput (l !! optsIndex)
+     report contents (Left err) = Text.putStrLn (failureDescription contents err 4)
 
 type NodeWrap = ((,) Int)
+
 
 succeed :: (Pretty a, Show a) => Output -> a -> IO ()
 succeed out x = case out
@@ -129,4 +148,13 @@ instance Pretty (StatementSequence Language Language NodeWrap NodeWrap) where
 instance Pretty (Statement Language Language NodeWrap NodeWrap) where
    pretty _ = error "Disambiguate before pretty-printing"
 instance Pretty (Expression Language Language NodeWrap NodeWrap) where
+   pretty _ = error "Disambiguate before pretty-printing"
+
+instance Pretty (Module ISO.AST.Language ISO.AST.Language Placed Placed) where
+   pretty m = pretty ((Identity . snd) Rank2.<$> m)
+instance Pretty (StatementSequence ISO.AST.Language ISO.AST.Language NodeWrap NodeWrap) where
+   pretty _ = error "Disambiguate before pretty-printing"
+instance Pretty (ISO.AST.Statement ISO.AST.Language ISO.AST.Language NodeWrap NodeWrap) where
+   pretty _ = error "Disambiguate before pretty-printing"
+instance Pretty (ISO.AST.Expression ISO.AST.Language ISO.AST.Language NodeWrap NodeWrap) where
    pretty _ = error "Disambiguate before pretty-printing"

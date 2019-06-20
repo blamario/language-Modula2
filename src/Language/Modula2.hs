@@ -1,11 +1,18 @@
-{-# Language FlexibleContexts, TypeFamilies #-}
+{-# Language FlexibleContexts, GADTs, StandaloneDeriving, TypeFamilies #-}
 -- | Every function in this module takes a flag that determines whether the input is a Modula2 module.
 
-module Language.Modula2 (parseModule, resolvePosition, resolvePositions, Placed) where
+module Language.Modula2 (parseModule, resolvePosition, resolvePositions, Placed, Version(..), SomeVersion(..)) where
 
-import Language.Modula2.AST (Language, Import(Import), Module(..))
+import qualified Language.Modula2.Abstract as Abstract
+import Language.Modula2.AST (Import(Import), Module(..))
+import qualified Language.Modula2.AST as Report (Language)
+import qualified Language.Modula2.ISO.AST as ISO (Language)
 import qualified Language.Modula2.Grammar as Grammar
+import qualified Language.Modula2.ISO.Grammar as ISO.Grammar
+import Language.Modula2.Pretty ()
+import Language.Modula2.ISO.Pretty ()
 
+import qualified Rank2 as Rank2 (snd)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Deep as Deep
 
@@ -25,6 +32,16 @@ import Prelude hiding (readFile)
 
 type Placed = ((,) Int)
 
+data Version l where
+   Report :: Version Report.Language
+   ISO    :: Version ISO.Language
+
+data SomeVersion where
+   SomeVersion :: Version l -> SomeVersion
+
+deriving instance Show (Version l)
+deriving instance Show SomeVersion
+
 resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p q) g p q)
                  => Text -> g p p -> g q q
 resolvePositions src t = resolvePosition src Rank2.<$> t
@@ -33,9 +50,11 @@ resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
 resolvePosition src = \(pos, a)-> (positionOffset src pos, a)
 
 -- | Parse the given text of a single module, without resolving the syntactic ambiguities.
-parseModule :: Text -> ParseResults [Module Language Language Placed Placed]
-parseModule src =
-  getCompose (resolvePositions src <$> Grammar.compilationUnit (parseComplete Grammar.modula2grammar src))
+parseModule :: Version l -> Text -> ParseResults [Abstract.Module l l Placed Placed]
+parseModule Report source = resolve source (parseComplete Grammar.modula2grammar source)
+parseModule ISO source = resolve source (Rank2.snd $ parseComplete ISO.Grammar.modula2ISOgrammar source)
+
+resolve source results = getCompose (resolvePositions source <$> Grammar.compilationUnit results)
 
 {-
 parseNamedModule :: FilePath -> Text -> IO (ParseResults [Module Language Language Placed Placed])
