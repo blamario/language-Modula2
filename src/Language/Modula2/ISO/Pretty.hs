@@ -53,6 +53,13 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
    pretty (AddressedVariableDeclaration vars varType) =
       "VAR" <+> hsep (punctuate comma $ pretty <$> toList vars) <+> colon <+> pretty varType <> semi
    pretty (ForwardProcedureDeclaration heading) = pretty heading <> semi <> "FORWARD" <> semi
+   pretty (ModuleDeclaration name priority imports export body) =
+      vsep $ intersperse mempty $
+      ["MODULE" <+> pretty name <> maybe mempty (brackets . pretty) priority <> semi,
+       vsep (pretty <$> imports),
+       foldMap pretty export,
+       pretty body,
+       "END" <+> pretty name <> semi]
    pretty dec = foldMap pretty (Abstract.coDeclaration dec :: Maybe (Report.Declaration True Report.Language l Identity Identity))
 
 instance Pretty (Abstract.ConstExpression l l Identity Identity) => Pretty (AddressedIdent l l Identity Identity) where
@@ -107,6 +114,13 @@ instance (Pretty (Abstract.ConstExpression l l Identity Identity),
       where dropEmptyTail
                | not (null l), EmptyStatement <- last l = init
                | otherwise = id
+   pretty (For index from to by body) = vsep ["FOR" <+> pretty index <+> ":=" <+> pretty from <+> "TO" <+> pretty to
+                                              <+> foldMap ("BY" <+>) (pretty <$> by) <+> "DO",
+                                              prettyBody body,
+                                              "END"]
+   pretty (With designator body) = vsep ["WITH" <+> pretty designator <+> "DO",
+                                         prettyBody body,
+                                         "END"]
    pretty RetryStatement = "RETRY"
    pretty stat = foldMap pretty (Abstract.coStatement stat :: Maybe (Report.Statement Report.Language l Identity Identity))
 
@@ -136,6 +150,8 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
       foldMap pretty itemType <+> braces (hsep $ punctuate comma $ pretty <$> items)
    pretty (Precedence _ (Record recordType fields)) =
       foldMap pretty recordType <+> braces (hsep $ punctuate comma $ pretty <$> fields)
+   pretty (Precedence _ (Set setType elements)) =
+      foldMap pretty setType <+> braces (hsep $ punctuate comma $ pretty <$> elements)
    pretty (Precedence p e) =
       foldMap (pretty . Precedence p) (Abstract.coExpression e :: Maybe (Report.Expression Report.Language l Identity Identity))
 

@@ -10,7 +10,7 @@ import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive (Parser)
+import Text.Grampa.ContextFree.LeftRecursive (Parser, (<<|>))
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -48,7 +48,7 @@ isoMixin ReportGrammar.Modula2Grammar{..} ISOMixin{..} = ISOMixin{
         sepByNonEmpty (wrap (ISO.Abstract.unaddressedIdent <$> ident
                              <|> ISO.Abstract.addressedIdent <$> ident <*> brackets constExpression))
                       (delimiter ","),
-   packedSetType = ISO.Abstract.packedSetType <$ keyword "SET" <* keyword "OF" <*> wrap simpleType,
+   packedSetType = ISO.Abstract.packedSetType <$ keyword "PACKED" <* keyword "SET" <* keyword "OF" <*> wrap simpleType,
    moduleBody = ISO.Abstract.exceptionHandlingBlock <$> declarationSequence
                 <*> optional (keyword "BEGIN" *> wrap statementSequence)
                 <*> optional (keyword "EXCEPT" *> wrap statementSequence)
@@ -92,7 +92,7 @@ isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..})
                             <*> optional (keyword "EXCEPT" *> wrap statementSequence) <*> pure Nothing <* keyword "END",
       ReportGrammar.statement = ReportGrammar.statement reportGrammar <|> retryStatement,
       ReportGrammar.case_prod = ReportGrammar.case_prod reportGrammar <|> pure Abstract.emptyCase,
-      ReportGrammar.factor = ReportGrammar.factor reportGrammar <|> wrap arrayConstructor <|> wrap recordConstructor,
+      ReportGrammar.factor = ReportGrammar.factor reportGrammar <<|> wrap arrayConstructor <<|> wrap recordConstructor,
       ReportGrammar.set = Abstract.set . Just <$> qualident <*> setConstructedValue,
       ReportGrammar.mulOperator = ReportGrammar.mulOperator reportGrammar
                                   <|> ReportGrammar.BinOp . ReportGrammar.wrapBinary

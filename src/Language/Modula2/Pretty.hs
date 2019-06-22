@@ -91,7 +91,8 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
       ["MODULE" <+> pretty name <> maybe mempty (brackets . pretty) priority <> semi,
        vsep (pretty <$> imports),
        foldMap pretty export,
-       pretty body]
+       pretty body,
+       "END" <+> pretty name <> semi]
    pretty declaration = foldMap pretty (Abstract.coDeclaration declaration
                                         :: Maybe (Oberon.Declaration Oberon.Language l Identity Identity))
 
@@ -108,7 +109,7 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.QualIdent l)) =>
          Pretty (Precedence (Expression Language l Identity Identity)) where
-   pretty (Precedence _ (Set ty elements)) = pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
+   pretty (Precedence _ (Set ty elements)) = foldMap pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
    pretty (Precedence _ (CharCode c)) = pretty (showOct c "") <> "C"
    pretty (Precedence p e) =
       foldMap (pretty . Precedence p) (Abstract.coExpression e :: Maybe (Oberon.Expression Oberon.Language l Identity Identity))

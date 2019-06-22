@@ -44,11 +44,15 @@ exampleTree ancestry path =
 
 prettyFile :: FilePath -> Text -> IO Text
 prettyFile path src = do
-   let parsedModule = parseModule ISO src
-   case parsedModule
-      of Left err -> error (unpack $ failureDescription src err 4)
-         Right [tree] -> return (renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
-         Right trees -> error (show (length trees) ++ " ambiguous pases.")
+   let parsedModule1 = parseModule Report src
+   let parsedModule2 = parseModule ISO src
+   case parsedModule1
+      of Right [tree] -> return (renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
+         Right trees -> error (show (length trees) ++ " ambiguous parses.")
+         Left err1 -> case parsedModule2
+                      of Left err2 -> error (unpack $ failureDescription src err1 4 <> failureDescription src err2 4)
+                         Right [tree] -> return (renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
+                         Right trees -> error (show (length trees) ++ " ambiguous parses.")
 
 instance Pretty (Module Language Language Placed Placed) where
    pretty m = pretty ((Identity . snd) Rank2.<$> m)
