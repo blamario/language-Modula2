@@ -115,10 +115,10 @@ main' Opts{..} =
                      StatementMode  -> go ISO Grammar.statement "<stdin>"
                      StatementsMode -> go ISO Grammar.statementSequence "<stdin>"
                      ExpressionMode -> go ISO ((snd <$>) . Grammar.expression) "<stdin>"
-     go :: (Show a, Pretty a, a ~ t l l Placed Placed,
-            Deep.Functor (Rank2.Map Grammar.NodeWrap NodeWrap) (t l l) Grammar.NodeWrap NodeWrap) =>
+     go :: (Show a, Pretty a, a ~ g l l Placed Placed,
+            Deep.Functor (Rank2.Map Grammar.NodeWrap NodeWrap) (g l l)) =>
            Version l
-        -> (forall p. Functor p => Grammar.Modula2Grammar l Grammar.NodeWrap p -> p (t l l Grammar.NodeWrap Grammar.NodeWrap))
+        -> (forall p. Functor p => Grammar.Modula2Grammar l Grammar.NodeWrap p -> p (g l l Grammar.NodeWrap Grammar.NodeWrap))
         -> String -> Text -> IO ()
      go Report production filename contents =
         report contents (getCompose $ resolvePositions contents

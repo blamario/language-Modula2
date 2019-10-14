@@ -33,6 +33,7 @@ instance Abstract.Wirthy Language where
    type Statement Language = Statement Language
    type Expression Language = Expression Language
    type Designator Language = Designator Language
+   type Value Language = Value Language
 
    type Import Language = Import Language
    type FieldList Language = FieldList Language
@@ -92,22 +93,28 @@ instance Abstract.Wirthy Language where
    or = Or
    divide = Divide
    integerDivide = IntegerDivide
+   literal = Literal
    modulo = Modulo
    multiply = Multiply
    functionCall = FunctionCall
-   integer = Integer
    negative = Negative
    positive = Positive
-   nil = Nil
    not = Not
    read = Read
-   real = Real
    relation = Relation
-   string = String
-   charCode = CharCode
 
    element = Element
    range = Range
+
+   -- Value
+   builtin = Builtin
+   integer = Integer
+   nil = Nil
+   real = Real
+   string = String
+   charCode = CharCode
+   false = Boolean False
+   true = Boolean True
 
    -- Designator
    variable = Variable
@@ -158,11 +165,7 @@ instance Abstract.CoWirthy Language where
    coExpression (IntegerDivide left right) = Just (Abstract.integerDivide left right)
    coExpression (Modulo left right) = Just (Abstract.modulo left right)
    coExpression (And left right) = Just (Abstract.and left right)
-   coExpression (Integer n) = Just (Abstract.integer n)
-   coExpression (Real r) = Just (Abstract.real r)
-   coExpression (String s) = Just (Abstract.string s)
-   coExpression (CharCode c) = Just (Abstract.charCode c)
-   coExpression Nil = Just Abstract.nil
+   coExpression (Literal value) = Just (Abstract.literal value)
    coExpression (Read var) = Just (Abstract.read var)
    coExpression (FunctionCall function parameters) = Just (Abstract.functionCall function parameters)
    coExpression (Not e) = Just (Abstract.not e)
@@ -170,6 +173,10 @@ instance Abstract.CoWirthy Language where
    coExpression Array{} = Nothing
    coExpression Record{} = Nothing
    coExpression Set{} = Nothing
+
+   coValue :: forall l l' f f'. (Abstract.Wirthy (l :: *), Traversable f, Traversable f') =>
+              Abstract.Value Language l' f' f  -> Maybe (Abstract.Value l l' f' f)
+   coValue v = Abstract.coValue (coerce v :: Abstract.Value Report.Language l'' f' f)
 
    coDesignator :: forall l l' f' f. (Abstract.Wirthy l, Traversable f', Traversable f)
                 => Abstract.Designator Language l' f' f -> Maybe (Abstract.Designator l l' f' f)
@@ -309,31 +316,28 @@ data Expression λ l f' f = Relation RelOp (f (Abstract.Expression l l f' f')) (
                          | Modulo (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
                          | Remainder (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
                          | And (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
-                         | Integer Integer
-                         | Real Double
-                         | String Text
-                         | CharCode Int
-                         | Nil
                          | Array (Maybe (Abstract.QualIdent l)) [f (ISO.Abstract.Item l l f' f')]
                          | Record (Maybe (Abstract.QualIdent l)) [f (Abstract.Expression l l f' f')]
                          | Set (Maybe (Abstract.QualIdent l)) [f (Abstract.Element l l f' f')]
                          | Read (f (Abstract.Designator l l f' f'))
                          | FunctionCall (f (Abstract.Designator l l f' f')) [f (Abstract.Expression l l f' f')]
                          | Not (f (Abstract.Expression l l f' f'))
+                         | Literal (f (Abstract.Value l l f' f'))
 
 data Item λ l f' f = Single (f (Abstract.Expression l l f' f'))
                    | Repeated (f (Abstract.Expression l l f' f')) (f (Abstract.ConstExpression l l f' f'))
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f', Data (Abstract.QualIdent l),
                    Data (f (Abstract.Designator l l f' f')), Data (f (Abstract.Element l l f' f')),
-                   Data (f (ISO.Abstract.Item l l f' f')), Data (f (Abstract.Expression l l f' f'))) =>
+                   Data (f (ISO.Abstract.Item l l f' f')), Data (f (Abstract.Value l l f' f')),
+                   Data (f (Abstract.Expression l l f' f'))) =>
                   Data (Expression λ l f' f)
 deriving instance (Show (Abstract.QualIdent l), Show (f (Abstract.Designator l l f' f')),
                    Show (f (Abstract.Element l l f' f')), Show (f (ISO.Abstract.Item l l f' f')),
-                   Show (f (Abstract.Expression l l f' f'))) => Show (Expression λ l f' f)
+                   Show (f (Abstract.Value l l f' f')), Show (f (Abstract.Expression l l f' f'))) => Show (Expression λ l f' f)
 deriving instance (Eq (Abstract.QualIdent l), Eq (f (Abstract.Designator l l f' f')),
                    Eq (f (Abstract.Element l l f' f')), Eq (f (ISO.Abstract.Item l l f' f')),
-                   Eq (f (Abstract.Expression l l f' f'))) => Eq (Expression λ l f' f)
+                   Eq (f (Abstract.Value l l f' f')), Eq (f (Abstract.Expression l l f' f'))) => Eq (Expression λ l f' f)
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f', Data (f (Abstract.Expression l l f' f')),
                    Data (f (Abstract.Expression l l f' f'))) =>
                   Data (Item λ l f' f)

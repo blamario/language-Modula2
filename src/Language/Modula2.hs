@@ -42,7 +42,7 @@ data SomeVersion where
 deriving instance Show (Version l)
 deriving instance Show SomeVersion
 
-resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p q) g p q)
+resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p q) g)
                  => Text -> g p p -> g q q
 resolvePositions src t = resolvePosition src Rank2.<$> t
 

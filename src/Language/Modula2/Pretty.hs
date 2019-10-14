@@ -97,6 +97,7 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
                                         :: Maybe (Oberon.Declaration Oberon.Language l Identity Identity))
 
 instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
+          Pretty (Abstract.Value l l Identity Identity),
           Pretty (Abstract.Expression l l Identity Identity),
           Pretty (Abstract.Element l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),
@@ -104,15 +105,20 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
    pretty e = pretty (Precedence 0 e)
 
 instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
+          Pretty (Abstract.Value l l Identity Identity),
           Pretty (Abstract.Expression l l Identity Identity),
           Pretty (Abstract.Element l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.QualIdent l)) =>
          Pretty (Precedence (Expression Language l Identity Identity)) where
    pretty (Precedence _ (Set ty elements)) = foldMap pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
-   pretty (Precedence _ (CharCode c)) = pretty (showOct c "") <> "C"
    pretty (Precedence p e) =
       foldMap (pretty . Precedence p) (Abstract.coExpression e :: Maybe (Oberon.Expression Oberon.Language l Identity Identity))
+
+instance {-# OVERLAPS #-} Pretty (Abstract.Value l l Identity Identity) =>
+         Pretty (Value Language l Identity Identity) where
+   pretty (CharCode c) = pretty (showOct c "") <> "C"
+   pretty v = foldMap pretty (Abstract.coValue v :: Maybe (Oberon.Value Oberon.Language l Identity Identity))
 
 instance (Pretty (Abstract.QualIdent l), Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.Expression l l Identity Identity)) => Pretty (Designator Language l Identity Identity) where
@@ -138,6 +144,7 @@ instance Pretty (QualIdent l) where
    pretty (QualIdent modulePath name) = mconcat (punctuate dot $ pretty <$> (modulePath <> [name]))
 
 instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (Abstract.Type l l Identity Identity),
+          Pretty (Abstract.Value l l Identity Identity),
           Pretty (Abstract.FieldList l l Identity Identity), Pretty (Abstract.Variant l l Identity Identity)) =>
          Pretty (FieldList Language l Identity Identity) where
    pretty (CaseFieldList localName name variants fallback) =

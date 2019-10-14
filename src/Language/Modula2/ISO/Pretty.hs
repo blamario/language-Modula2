@@ -84,6 +84,7 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
    pretty ty = foldMap pretty (Abstract.coType ty :: Maybe (Report.Type Report.Language l Identity Identity))
 
 instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (Abstract.Type l l Identity Identity),
+          Pretty (Abstract.Value l l Identity Identity),
           Pretty (Abstract.FieldList l l Identity Identity), Pretty (Abstract.Variant l l Identity Identity)) =>
          Pretty (Report.FieldList Language l Identity Identity) where
    pretty fl = pretty (coerce fl :: Report.FieldList Report.Language l Identity Identity)
@@ -126,6 +127,7 @@ instance (Pretty (Abstract.ConstExpression l l Identity Identity),
 
 instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Expression l l Identity Identity),
+          Pretty (Abstract.Value l l Identity Identity),
           Pretty (Abstract.Element l l Identity Identity),
           Pretty (ISO.Abstract.Item l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),
@@ -138,6 +140,7 @@ instance (Pretty (Abstract.Expression l l Identity Identity)) => Pretty (Item La
 
 instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Expression l l Identity Identity),
+          Pretty (Abstract.Value l l Identity Identity),
           Pretty (Abstract.Element l l Identity Identity),
           Pretty (ISO.Abstract.Item l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),

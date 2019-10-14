@@ -22,9 +22,9 @@ import qualified Language.Modula2.AST as AST
 -- | All the productions of the Modula-2 grammar
 data Modula2Grammar l f p = Modula2Grammar {
    ident :: p Abstract.Ident,
-   number :: p (Abstract.Expression l l f f),
-   integer :: p (Abstract.Expression l l f f),
-   real :: p (Abstract.Expression l l f f),
+   number :: p (Abstract.Value l l f f),
+   integer :: p (Abstract.Value l l f f),
+   real :: p (Abstract.Value l l f f),
    scaleFactor :: p Text,
    hexDigit :: p Text,
    digit :: p Text,
@@ -188,8 +188,8 @@ grammar g@Modula2Grammar{..} = g{
        <|> term)
       <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> term))),
    term = factor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> factor))),
-   factor = wrap (number
-                  <|> Abstract.string <$> string_prod
+   factor = wrap (Abstract.literal <$> wrap (number
+                                             <|> Abstract.string <$> string_prod)
                   <|> set
                   <|> Abstract.read <$> wrap designator
                   <|> Abstract.functionCall <$> wrap designator <*> actualParameters

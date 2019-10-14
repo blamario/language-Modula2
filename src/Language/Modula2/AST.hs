@@ -1,15 +1,18 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleInstances, GADTs, DataKinds, KindSignatures, MultiParamTypeClasses, UndecidableInstances,
+{-# LANGUAGE DeriveDataTypeable, FlexibleInstances, GADTs, DataKinds, InstanceSigs, KindSignatures,
+             MultiParamTypeClasses, UndecidableInstances,
              ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
 -- | Modula-2 Abstract Syntax Tree definitions
 
 module Language.Modula2.AST (module Language.Modula2.AST,
-                             Oberon.Element(..), Oberon.FormalParameters(..), Oberon.FPSection(..),
+                             Oberon.Value(..), Oberon.Element(..),
+                             Oberon.FormalParameters(..), Oberon.FPSection(..),
                              Oberon.Block(..), Oberon.StatementSequence(..),
                              Oberon.Case(..), Oberon.CaseLabels(..),
                              Oberon.RelOp(..)) where
 
+import Data.Coerce (coerce)
 import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
 import Data.Text (Text)
@@ -31,6 +34,7 @@ instance Abstract.Wirthy Language where
    type Type Language = Type Language
    type Statement Language = Statement Language
    type Expression Language = Expression Language
+   type Value Language = Oberon.Value Language
    type Designator Language = Designator Language
 
    type Import Language = Import Language
@@ -91,22 +95,28 @@ instance Abstract.Wirthy Language where
    or = Or
    divide = Divide
    integerDivide = IntegerDivide
+   literal = Literal
    modulo = Modulo
    multiply = Multiply
    functionCall = FunctionCall
-   integer = Integer
    negative = Negative
    positive = Positive
-   nil = Nil
    not = Not
    read = Read
-   real = Real
    relation = Relation
-   string = String
-   charCode = CharCode
 
    element = Oberon.Element
    range = Oberon.Range
+
+   -- Value
+   builtin = Oberon.Builtin
+   integer = Oberon.Integer
+   nil = Oberon.Nil
+   real = Oberon.Real
+   string = Oberon.String
+   charCode = Oberon.CharCode
+   false = Oberon.Boolean False
+   true = Oberon.Boolean True
 
    -- Designator
    variable = Variable
@@ -152,23 +162,22 @@ instance Abstract.CoWirthy Language where
    coExpression (Multiply left right) = Just (Abstract.multiply left right)
    coExpression (Divide left right) = Just (Abstract.divide left right)
    coExpression (IntegerDivide left right) = Just (Abstract.integerDivide left right)
+   coExpression (Literal value) = Just (Abstract.literal value)
    coExpression (Modulo left right) = Just (Abstract.modulo left right)
    coExpression (And left right) = Just (Abstract.and left right)
-   coExpression (Integer n) = Just (Abstract.integer n)
-   coExpression (Real r) = Just (Abstract.real r)
-   coExpression (String s) = Just (Abstract.string s)
-   coExpression (CharCode c) = Just (Abstract.charCode c)
-   coExpression Nil = Just Abstract.nil
    coExpression Set{} = Nothing
    coExpression (Read var) = Just (Abstract.read var)
    coExpression (FunctionCall function parameters) = Just (Abstract.functionCall function parameters)
    coExpression (Not e) = Just (Abstract.not e)
 
+   coValue :: forall l l' f f'. (Abstract.Wirthy (l :: *), Traversable f, Traversable f') =>
+              Abstract.Value Language l' f' f  -> Maybe (Abstract.Value l l' f' f)
+   coValue v = Abstract.coValue (coerce v :: Abstract.Value Oberon.Language l'' f' f)
+
    coDesignator (Variable q) = Just (Abstract.variable q)
    coDesignator (Field record name) = Just (Abstract.field record name)
    coDesignator (Index array indexes) = Just (Abstract.index array indexes)
    coDesignator (Dereference pointer) = Just (Abstract.dereference pointer)
-   coDesignator _ = Nothing
 
 instance Abstract.Nameable Language where
    getProcedureName (ProcedureHeading name _) = name
@@ -273,25 +282,23 @@ data Expression λ l f' f = Relation Oberon.RelOp (f (Abstract.Expression l l f'
                          | IntegerDivide (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
                          | Modulo (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
                          | And (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
-                         | Integer Integer
-                         | Real Double
-                         | String Text
-                         | CharCode Int
-                         | Nil 
                          | Set (Maybe (Abstract.QualIdent l)) [f (Abstract.Element l l f' f')]
                          | Read (f (Abstract.Designator l l f' f'))
                          | FunctionCall (f (Abstract.Designator l l f' f')) [f (Abstract.Expression l l f' f')]
                          | Not (f (Abstract.Expression l l f' f'))
+                         | Literal (f (Abstract.Value l l f' f'))
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f', Data (Abstract.QualIdent l),
                    Data (f (Abstract.Designator l l f' f')), Data (f (Abstract.Element l l f' f')),
-                   Data (f (Abstract.Expression l l f' f'))) =>
+                   Data (f (Abstract.Value l l f' f')), Data (f (Abstract.Expression l l f' f'))) =>
                   Data (Expression λ l f' f)
 deriving instance (Show (Abstract.QualIdent l), Show (f (Abstract.Designator l l f' f')),
-                   Show (f (Abstract.Element l l f' f')), Show (f (Abstract.Expression l l f' f'))) =>
+                   Show (f (Abstract.Element l l f' f')), Show (f (Abstract.Value l l f' f')),
+                   Show (f (Abstract.Expression l l f' f'))) =>
                   Show (Expression λ l f' f)
 deriving instance (Eq (Abstract.QualIdent l), Eq (f (Abstract.Designator l l f' f')),
-                   Eq (f (Abstract.Element l l f' f')), Eq (f (Abstract.Expression l l f' f'))) =>
+                   Eq (f (Abstract.Element l l f' f')), Eq (f (Abstract.Value l l f' f')),
+                   Eq (f (Abstract.Expression l l f' f'))) =>
                   Eq (Expression λ l f' f)
 
 data Designator λ l f' f = Variable (Abstract.QualIdent l)
