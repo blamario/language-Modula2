@@ -13,7 +13,6 @@ import Data.List.NonEmpty (NonEmpty((:|)), fromList, toList)
 import qualified Data.Text as Text
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
-import Transformation.Deep as Deep (Product(Pair))
 
 import qualified Language.Oberon.Abstract
 import qualified Language.Oberon.AST
@@ -108,6 +107,7 @@ instance (Pretty (Abstract.Declaration l l Identity Identity), Pretty (Abstract.
 instance (Pretty (Abstract.ConstExpression l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.Case l l Identity Identity),
+          Pretty (Abstract.ConditionalBranch l l Identity Identity),
           Pretty (Language.Oberon.Abstract.WithAlternative l l Identity Identity),
           Pretty (Abstract.StatementSequence l l Identity Identity)) =>
          Pretty (Statement Language l Identity Identity) where

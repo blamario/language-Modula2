@@ -10,7 +10,6 @@ import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
-import Transformation.Deep (Product)
 import Language.Oberon.Abstract
 
 type Priority l = ConstExpression l

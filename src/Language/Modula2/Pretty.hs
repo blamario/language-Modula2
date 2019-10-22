@@ -13,7 +13,6 @@ import qualified Data.Text as Text
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import Numeric (showHex, showOct)
-import Transformation.Deep as Deep (Product(Pair))
 
 import qualified Language.Oberon.Abstract
 import qualified Language.Oberon.AST
@@ -171,6 +170,7 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
 instance (Pretty (Abstract.ConstExpression l l Identity Identity),
           Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.Case l l Identity Identity),
+          Pretty (Abstract.ConditionalBranch l l Identity Identity),
           Pretty (Language.Oberon.Abstract.WithAlternative l l Identity Identity),
           Pretty (Abstract.StatementSequence l l Identity Identity)) =>
          Pretty (Statement Language l Identity Identity) where

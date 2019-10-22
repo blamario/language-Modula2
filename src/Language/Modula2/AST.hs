@@ -9,7 +9,7 @@ module Language.Modula2.AST (module Language.Modula2.AST,
                              Oberon.Value(..), Oberon.Element(..),
                              Oberon.FormalParameters(..), Oberon.FPSection(..),
                              Oberon.Block(..), Oberon.StatementSequence(..),
-                             Oberon.Case(..), Oberon.CaseLabels(..),
+                             Oberon.Case(..), Oberon.CaseLabels(..), Oberon.ConditionalBranch(..),
                              Oberon.RelOp(..)) where
 
 import Data.Coerce (coerce)
@@ -17,7 +17,6 @@ import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
-import Transformation.Deep (Product)
 import qualified Transformation.Deep.TH
 import qualified Rank2 as Rank2
 import qualified Rank2.TH
@@ -46,6 +45,7 @@ instance Abstract.Wirthy Language where
    type StatementSequence Language = Oberon.StatementSequence Language
    type Case Language = Oberon.Case Language
    type CaseLabels Language = Oberon.CaseLabels Language
+   type ConditionalBranch Language = Oberon.ConditionalBranch Language
    type Element Language = Oberon.Element Language
 
    type IdentDef Language = IdentDef Language
@@ -81,6 +81,7 @@ instance Abstract.Wirthy Language where
    returnStatement = Return
    whileStatement = While
 
+   conditionalBranch = Oberon.ConditionalBranch
    caseAlternative = Oberon.Case
    emptyCase = Oberon.EmptyCase
    labelRange = Oberon.LabelRange
@@ -365,7 +366,7 @@ deriving instance (Show (f (Abstract.FormalParameters l l f' f'))) =>
 data Statement λ l f' f = EmptyStatement
                         | Assignment (f (Abstract.Designator l l f' f')) (f (Abstract.Expression l l f' f'))
                         | ProcedureCall (f (Abstract.Designator l l f' f')) (Maybe [f (Abstract.Expression l l f' f')])
-                        | If (NonEmpty (f (Product (Abstract.Expression l l) (Abstract.StatementSequence l l) f' f')))
+                        | If (NonEmpty (f (Abstract.ConditionalBranch l l f' f')))
                              (Maybe (f (Abstract.StatementSequence l l f' f')))
                         | CaseStatement (f (Abstract.Expression l l f' f')) 
                                         (NonEmpty (f (Abstract.Case l l f' f'))) 
@@ -381,12 +382,10 @@ data Statement λ l f' f = EmptyStatement
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f',
                    Data (f (Abstract.Designator l l f' f')), Data (f (Abstract.Expression l l f' f')),
-                   Data (f (Product (Abstract.Expression l l) (Abstract.StatementSequence l l) f' f')),
-                   Data (f (Abstract.Case l l f' f')),
+                   Data (f (Abstract.Case l l f' f')), Data (f (Abstract.ConditionalBranch l l f' f')),
                    Data (f (Abstract.StatementSequence l l f' f'))) => Data (Statement λ l f' f)
 deriving instance (Show (f (Abstract.Designator l l f' f')), Show (f (Abstract.Expression l l f' f')),
-                   Show (f (Product (Abstract.Expression l l) (Abstract.StatementSequence l l) f' f')),
-                   Show (f (Abstract.Case l l f' f')),
+                   Show (f (Abstract.Case l l f' f')), Show (f (Abstract.ConditionalBranch l l f' f')),
                    Show (f (Abstract.StatementSequence l l f' f'))) => Show (Statement λ l f' f)
 
 $(mconcat <$> mapM Transformation.Deep.TH.deriveAll

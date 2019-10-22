@@ -14,7 +14,6 @@ import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
 import qualified Rank2.TH
-import Transformation.Deep as Deep (Product(Pair))
 
 import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.AST as AST
@@ -207,7 +206,7 @@ grammar g@Modula2Grammar{..} = g{
    procedureCall = Abstract.procedureCall <$> wrap designator <*> optional actualParameters,
    statementSequence = Abstract.statementSequence <$> sepByNonEmpty (wrap statement) (delimiter ";"),
    ifStatement = Abstract.ifStatement <$ keyword "IF"
-       <*> sepByNonEmpty (wrap $ Deep.Pair <$> expression <* keyword "THEN" <*> wrap statementSequence)
+       <*> sepByNonEmpty (wrap $ Abstract.conditionalBranch <$> expression <* keyword "THEN" <*> wrap statementSequence)
                          (keyword "ELSIF")
        <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
    caseStatement = Abstract.caseStatement <$ keyword "CASE" <*> expression

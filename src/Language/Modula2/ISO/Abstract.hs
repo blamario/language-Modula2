@@ -9,7 +9,6 @@ import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
-import Transformation.Deep (Product)
 import qualified Language.Modula2.Abstract as Report
 import Language.Modula2.Abstract hiding (Modula2)
 

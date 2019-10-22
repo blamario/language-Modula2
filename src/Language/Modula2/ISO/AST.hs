@@ -12,7 +12,6 @@ import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
-import Transformation.Deep (Product)
 import qualified Transformation.Deep.TH
 import qualified Rank2 as Rank2
 import qualified Rank2.TH
@@ -44,6 +43,7 @@ instance Abstract.Wirthy Language where
    type StatementSequence Language = StatementSequence Language
    type Case Language = Case Language
    type CaseLabels Language = CaseLabels Language
+   type ConditionalBranch Language = ConditionalBranch Language
    type Element Language = Element Language
 
    type IdentDef Language = Ident
@@ -79,6 +79,7 @@ instance Abstract.Wirthy Language where
    returnStatement = Return
    whileStatement = While
 
+   conditionalBranch = ConditionalBranch
    caseAlternative = Case
    emptyCase = EmptyCase
    labelRange = LabelRange
@@ -372,7 +373,7 @@ deriving instance (Show (f (Abstract.Declaration l l f' f')), Show (f (Abstract.
 data Statement λ l f' f = EmptyStatement
                         | Assignment (f (Abstract.Designator l l f' f')) (f (Abstract.Expression l l f' f'))
                         | ProcedureCall (f (Abstract.Designator l l f' f')) (Maybe [f (Abstract.Expression l l f' f')])
-                        | If (NonEmpty (f (Product (Abstract.Expression l l) (Abstract.StatementSequence l l) f' f')))
+                        | If (NonEmpty (f (Abstract.ConditionalBranch l l f' f')))
                              (Maybe (f (Abstract.StatementSequence l l f' f')))
                         | CaseStatement (f (Abstract.Expression l l f' f')) 
                                         (NonEmpty (f (Abstract.Case l l f' f'))) 
@@ -389,12 +390,10 @@ data Statement λ l f' f = EmptyStatement
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f',
                    Data (f (Abstract.Designator l l f' f')), Data (f (Abstract.Expression l l f' f')),
-                   Data (f (Product (Abstract.Expression l l) (Abstract.StatementSequence l l) f' f')),
-                   Data (f (Abstract.Case l l f' f')),
+                   Data (f (Abstract.Case l l f' f')), Data (f (Abstract.ConditionalBranch l l f' f')),
                    Data (f (Abstract.StatementSequence l l f' f'))) => Data (Statement λ l f' f)
 deriving instance (Show (f (Abstract.Designator l l f' f')), Show (f (Abstract.Expression l l f' f')),
-                   Show (f (Product (Abstract.Expression l l) (Abstract.StatementSequence l l) f' f')),
-                   Show (f (Abstract.Case l l f' f')),
+                   Show (f (Abstract.Case l l f' f')), Show (f (Abstract.ConditionalBranch l l f' f')),
                    Show (f (Abstract.StatementSequence l l f' f'))) => Show (Statement λ l f' f)
 
 $(mconcat <$> mapM Transformation.Deep.TH.deriveAll
