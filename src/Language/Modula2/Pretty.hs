@@ -6,6 +6,7 @@
 
 module Language.Modula2.Pretty () where
 
+import Control.Applicative (ZipList(ZipList, getZipList))
 import Data.Functor.Identity (Identity(..))
 import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty((:|)), fromList, toList)
@@ -33,7 +34,7 @@ instance (Pretty (Abstract.Priority l l Identity Identity),
       ["DEFINITION" <+> "MODULE" <+> pretty name <> semi,
        vsep (pretty <$> imports),
        foldMap pretty export]
-      <> (pretty <$> declarations)
+      <> (pretty <$> getZipList declarations)
       <> ["END" <+> pretty name <> "." <> line]
    pretty (ImplementationModule name priority imports body) =
      "IMPLEMENTATION" <+> pretty (ProgramModule name priority imports body)
@@ -110,7 +111,8 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.QualIdent l)) =>
          Pretty (Precedence (Expression Language l Identity Identity)) where
-   pretty (Precedence _ (Set ty elements)) = foldMap pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> elements)
+   pretty (Precedence _ (Set ty elements)) =
+      foldMap pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> getZipList elements)
    pretty (Precedence p e) =
       foldMap (pretty . Precedence p) (Abstract.coExpression e :: Maybe (Oberon.Expression Oberon.Language l Identity Identity))
 
@@ -128,12 +130,12 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
           Pretty (Abstract.ConstExpression l l Identity Identity), Pretty (Abstract.Type l l Identity Identity),
           Pretty (Abstract.BaseType l)) => Pretty (Type Language l Identity Identity) where
    pretty (ArrayType dimensions itemType) =
-      "ARRAY" <+> hsep (punctuate comma $ pretty . runIdentity <$> dimensions) <+> "OF" <+> pretty itemType
+      "ARRAY" <+> hsep (punctuate comma $ pretty . runIdentity <$> getZipList dimensions) <+> "OF" <+> pretty itemType
    pretty (EnumerationType values) = "(" <> hsep (punctuate comma $ toList $ pretty <$> values) <> ")"
    pretty (SubrangeType enumType min max) = foldMap pretty enumType <> "[" <> pretty min <+> ".." <+> pretty max <> "]"
    pretty (SetType memberType) = "SET" <+> "OF" <+> pretty memberType
    pretty (RecordType fields) = vsep ["RECORD",
-                                       indent 3 (vsep $ punctuate semi $ pretty <$> toList fields),
+                                       indent 3 (vsep $ punctuate semi $ pretty <$> getZipList fields),
                                        "END"]
    pretty (ProcedureType parameters) = "PROCEDURE" <+> adjust (pretty parameters)
       where adjust = pretty . Text.replace " : " "" . Text.replace ";" "," . renderStrict . layoutCompact
@@ -151,15 +153,14 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (A
            <> punctuate' "| " (pretty <$> toList variants)
            <> (if null fallback then []
                else ["ELSE" <#>
-                     indent 3 (vsep $ punctuate semi $ pretty . runIdentity <$> fallback)])
+                     indent 3 (vsep $ punctuate semi $ pretty . runIdentity <$> getZipList fallback)])
            <> ["END"])
    pretty (FieldList names t) = hsep (punctuate comma $ pretty <$> toList names) <+> ":" <+> pretty t
-   pretty EmptyFieldList = mempty
 
 instance (Pretty (Abstract.CaseLabels l l Identity Identity), Pretty (Abstract.FieldList l l Identity Identity)) =>
          Pretty (Variant λ l Identity Identity) where
   pretty (Variant labels fields) = vsep [hsep (punctuate comma $ pretty <$> toList labels) <> ":",
-                                         indent 3 (vsep $ punctuate semi $ pretty <$> toList fields)]
+                                         indent 3 (vsep $ punctuate semi $ pretty <$> getZipList fields)]
 
 instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Identity Identity),
           Pretty (Abstract.Type l l Identity Identity)) =>

@@ -6,6 +6,7 @@
 
 module Language.Modula2.ISO.Pretty () where
 
+import Control.Applicative (ZipList(ZipList, getZipList))
 import Data.Coerce (coerce)
 import Data.Functor.Identity (Identity(..))
 import Data.List (intersperse)
@@ -70,13 +71,13 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
           Pretty (Abstract.ConstExpression l l Identity Identity), Pretty (Abstract.Type l l Identity Identity),
           Pretty (Abstract.BaseType l)) => Pretty (Type Language l Identity Identity) where
    pretty (ArrayType dimensions itemType) =
-      "ARRAY" <+> hsep (punctuate comma $ pretty . runIdentity <$> dimensions) <+> "OF" <+> pretty itemType
+      "ARRAY" <+> hsep (punctuate comma $ pretty . runIdentity <$> getZipList dimensions) <+> "OF" <+> pretty itemType
    pretty (EnumerationType values) = "(" <> hsep (punctuate comma $ toList $ pretty <$> values) <> ")"
    pretty (SubrangeType enumType min max) = foldMap pretty enumType <> "[" <> pretty min <+> ".." <+> pretty max <> "]"
    pretty (SetType memberType) = "SET" <+> "OF" <+> pretty memberType
    pretty (PackedSetType memberType) = "PACKED" <+> "SET" <+> "OF" <+> pretty memberType
    pretty (RecordType fields) = vsep ["RECORD",
-                                       indent 3 (vsep $ punctuate semi $ pretty <$> toList fields),
+                                       indent 3 (vsep $ punctuate semi $ pretty <$> getZipList fields),
                                        "END"]
    pretty (ProcedureType parameters) = "PROCEDURE" <+> adjust (pretty parameters)
       where adjust = pretty . Text.replace " : " "" . Text.replace ";" "," . renderStrict . layoutCompact
@@ -96,10 +97,10 @@ instance (Pretty (Abstract.CaseLabels l l Identity Identity), Pretty (Abstract.F
 instance (Pretty (Abstract.Declaration l l Identity Identity), Pretty (Abstract.StatementSequence l l Identity Identity)) =>
          Pretty (Block λ l Identity Identity) where
    pretty (Block declarations body) =
-      vsep ((indent 3 . pretty <$> declarations)
+      vsep ((indent 3 . pretty <$> getZipList declarations)
             ++ foldMap (\statements-> ["BEGIN", prettyBody statements]) body)
    pretty (ExceptionHandlingBlock declarations body except finally) =
-      vsep ((indent 3 . pretty <$> declarations)
+      vsep ((indent 3 . pretty <$> getZipList declarations)
             ++ foldMap (\statements-> ["BEGIN", prettyBody statements]) body
             ++ foldMap (\statements-> ["EXCEPT", prettyBody statements]) except
             ++ foldMap (\statements-> ["FINALLY", prettyBody statements]) finally)
@@ -154,7 +155,7 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
    pretty (Precedence _ (Record recordType fields)) =
       foldMap pretty recordType <+> braces (hsep $ punctuate comma $ pretty <$> fields)
    pretty (Precedence _ (Set setType elements)) =
-      foldMap pretty setType <+> braces (hsep $ punctuate comma $ pretty <$> elements)
+      foldMap pretty setType <+> braces (hsep $ punctuate comma $ pretty <$> getZipList elements)
    pretty (Precedence p e) =
       foldMap (pretty . Precedence p) (Abstract.coExpression e :: Maybe (Report.Expression Report.Language l Identity Identity))
 

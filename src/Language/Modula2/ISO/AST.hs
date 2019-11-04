@@ -7,6 +7,7 @@
 
 module Language.Modula2.ISO.AST where
 
+import Control.Applicative (ZipList(ZipList, getZipList))
 import Data.Coerce (coerce)
 import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
@@ -55,12 +56,11 @@ instance Abstract.Wirthy Language where
    variableDeclaration = VariableDeclaration
    procedureDeclaration = ProcedureDeclaration
 
-   formalParameters = FormalParameters
+   formalParameters = FormalParameters . ZipList
    fpSection = FPSection
-   block = Block
+   block = Block . ZipList
    
    fieldList = FieldList
-   emptyFieldList = EmptyFieldList
 
    -- Type
    pointerType = PointerType
@@ -69,23 +69,22 @@ instance Abstract.Wirthy Language where
 
    -- Statement
    assignment = Assignment
-   caseStatement = CaseStatement
+   caseStatement scrutinee cases = CaseStatement scrutinee (ZipList cases)
    emptyStatement = EmptyStatement
    exitStatement = Exit
-   ifStatement = If
+   ifStatement (branch :| branches) = If branch (ZipList branches)
    loopStatement = Loop
-   procedureCall = ProcedureCall
+   procedureCall proc args = ProcedureCall proc (ZipList <$> args)
    repeatStatement = Repeat
    returnStatement = Return
    whileStatement = While
 
    conditionalBranch = ConditionalBranch
-   caseAlternative = Case
-   emptyCase = EmptyCase
+   caseAlternative (c :| cs) = Case c (ZipList cs)
    labelRange = LabelRange
    singleLabel = SingleLabel
    
-   statementSequence = StatementSequence
+   statementSequence = StatementSequence . ZipList
 
    -- Expression
    add = Add
@@ -97,7 +96,7 @@ instance Abstract.Wirthy Language where
    literal = Literal
    modulo = Modulo
    multiply = Multiply
-   functionCall = FunctionCall
+   functionCall fun args = FunctionCall fun (ZipList args)
    negative = Negative
    positive = Positive
    not = Not
@@ -120,7 +119,7 @@ instance Abstract.Wirthy Language where
    -- Designator
    variable = Variable
    field = Field
-   index = Index
+   index array (index :| indexes) = Index array index (ZipList indexes)
    dereference = Dereference
 
    -- Identifier
@@ -143,9 +142,10 @@ instance Abstract.CoWirthy Language where
 
    coStatement EmptyStatement = Just Abstract.emptyStatement
    coStatement (Assignment destination expression) = Just (Abstract.assignment destination expression)
-   coStatement (ProcedureCall procedure parameters) = Just (Abstract.procedureCall procedure parameters)
-   coStatement (If branches fallback) = Just (Abstract.ifStatement branches fallback)
-   coStatement (CaseStatement scrutinee cases fallback) = Just (Abstract.caseStatement scrutinee cases fallback)
+   coStatement (ProcedureCall procedure parameters) = Just (Abstract.procedureCall procedure $ getZipList <$> parameters)
+   coStatement (If branch elsifs fallback) = Just (Abstract.ifStatement (branch :| getZipList elsifs) fallback)
+   coStatement (CaseStatement scrutinee cases fallback) =
+      Just (Abstract.caseStatement scrutinee (getZipList cases) fallback)
    coStatement (While condition body) = Just (Abstract.whileStatement condition body)
    coStatement (Repeat body condition) = Just (Abstract.repeatStatement body condition)
    coStatement (Loop body) = Just (Abstract.loopStatement body)
@@ -168,7 +168,7 @@ instance Abstract.CoWirthy Language where
    coExpression (And left right) = Just (Abstract.and left right)
    coExpression (Literal value) = Just (Abstract.literal value)
    coExpression (Read var) = Just (Abstract.read var)
-   coExpression (FunctionCall function parameters) = Just (Abstract.functionCall function parameters)
+   coExpression (FunctionCall function parameters) = Just (Abstract.functionCall function $ getZipList parameters)
    coExpression (Not e) = Just (Abstract.not e)
    coExpression Remainder{} = Nothing
    coExpression Array{} = Nothing
@@ -195,7 +195,7 @@ instance Abstract.Modula2 Language where
    type Variant Language = Variant Language
 
    -- Module
-   definitionModule = DefinitionModule
+   definitionModule name imports exports definitions = DefinitionModule name imports exports (ZipList definitions)
    implementationModule = ImplementationModule
    programModule = ProgramModule
 
@@ -212,12 +212,12 @@ instance Abstract.Modula2 Language where
    moduleDeclaration = ModuleDeclaration
 
    -- Type
-   arrayType = ArrayType
-   recordType = RecordType
+   arrayType = ArrayType . ZipList
+   recordType = RecordType . ZipList
 
    procedureHeading = ProcedureHeading
-   caseFieldList = CaseFieldList
-   variant = Variant
+   caseFieldList n t variants fallback = CaseFieldList n t variants (ZipList fallback)
+   variant cases fields = Variant cases (ZipList fields)
 
    forStatement = For
    withStatement = With
@@ -227,7 +227,7 @@ instance Abstract.Modula2 Language where
    setType = SetType
    
    -- Expression
-   set = Set
+   set memberType members = Set memberType (ZipList members)
    qualIdent = QualIdent
 
 instance ISO.Abstract.Modula2 Language where
@@ -238,7 +238,7 @@ instance ISO.Abstract.Modula2 Language where
    emptyVariant = EmptyVariant
    addressedVariableDeclaration = AddressedVariableDeclaration
    forwardProcedureDeclaration = ForwardProcedureDeclaration
-   exceptionHandlingBlock = ExceptionHandlingBlock
+   exceptionHandlingBlock = ExceptionHandlingBlock . ZipList
    addressedIdent = AddressedIdent
    unaddressedIdent = UnaddressedIdent
 
@@ -285,13 +285,13 @@ deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f',
 deriving instance (Show (f (Abstract.ConstExpression l l f' f'))) => Show (AddressedIdent λ l f' f)
 
 data Type λ l f' f = TypeReference (Abstract.QualIdent l)
-                   | ArrayType [f (Abstract.Type l l f' f')] (f (Abstract.Type l l f' f'))
+                   | ArrayType (ZipList (f (Abstract.Type l l f' f'))) (f (Abstract.Type l l f' f'))
                    | EnumerationType (Abstract.IdentList l)
                    | SubrangeType (Maybe (Abstract.QualIdent l))
                                   (f (Abstract.ConstExpression l l f' f')) (f (Abstract.ConstExpression l l f' f'))
                    | SetType (f (Abstract.Type l l f' f'))
                    | PackedSetType (f (Abstract.Type l l f' f'))
-                   | RecordType (NonEmpty (f (Abstract.FieldList l l f' f')))
+                   | RecordType (ZipList (f (Abstract.FieldList l l f' f')))
                    | PointerType (f (Abstract.Type l l f' f'))
                    | ProcedureType (Maybe (f (Abstract.FormalParameters l l f' f')))
 
@@ -319,9 +319,9 @@ data Expression λ l f' f = Relation RelOp (f (Abstract.Expression l l f' f')) (
                          | And (f (Abstract.Expression l l f' f')) (f (Abstract.Expression l l f' f'))
                          | Array (Maybe (Abstract.QualIdent l)) [f (ISO.Abstract.Item l l f' f')]
                          | Record (Maybe (Abstract.QualIdent l)) [f (Abstract.Expression l l f' f')]
-                         | Set (Maybe (Abstract.QualIdent l)) [f (Abstract.Element l l f' f')]
+                         | Set (Maybe (Abstract.QualIdent l)) (ZipList (f (Abstract.Element l l f' f')))
                          | Read (f (Abstract.Designator l l f' f'))
-                         | FunctionCall (f (Abstract.Designator l l f' f')) [f (Abstract.Expression l l f' f')]
+                         | FunctionCall (f (Abstract.Designator l l f' f')) (ZipList (f (Abstract.Expression l l f' f')))
                          | Not (f (Abstract.Expression l l f' f'))
                          | Literal (f (Abstract.Value l l f' f'))
 
@@ -347,7 +347,7 @@ deriving instance (Eq (f (Abstract.Expression l l f' f'))) => Eq (Item λ l f' f
 
 
 data Variant λ l f' f =
-   Variant (NonEmpty (f (Abstract.CaseLabels l l f' f'))) (NonEmpty (f (Abstract.FieldList l l f' f')))
+   Variant (NonEmpty (f (Abstract.CaseLabels l l f' f'))) (ZipList (f (Abstract.FieldList l l f' f')))
    | EmptyVariant
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f', Data (f (Abstract.CaseLabels l l f' f')),
@@ -356,8 +356,8 @@ deriving instance (Show (f (Abstract.CaseLabels l l f' f')), Show (f (Abstract.F
                => Show (Variant λ l f' f)
 
 
-data Block λ l f' f = Block [f (Abstract.Declaration l l f' f')] (Maybe (f (Abstract.StatementSequence l l f' f')))
-                    | ExceptionHandlingBlock [f (Abstract.Declaration l l f' f')]
+data Block λ l f' f = Block (ZipList (f (Abstract.Declaration l l f' f'))) (Maybe (f (Abstract.StatementSequence l l f' f')))
+                    | ExceptionHandlingBlock (ZipList (f (Abstract.Declaration l l f' f')))
                                              (Maybe (f (Abstract.StatementSequence l l f' f')))
                                              (Maybe (f (Abstract.StatementSequence l l f' f')))
                                              (Maybe (f (Abstract.StatementSequence l l f' f')))
@@ -372,11 +372,12 @@ deriving instance (Show (f (Abstract.Declaration l l f' f')), Show (f (Abstract.
 
 data Statement λ l f' f = EmptyStatement
                         | Assignment (f (Abstract.Designator l l f' f')) (f (Abstract.Expression l l f' f'))
-                        | ProcedureCall (f (Abstract.Designator l l f' f')) (Maybe [f (Abstract.Expression l l f' f')])
-                        | If (NonEmpty (f (Abstract.ConditionalBranch l l f' f')))
+                        | ProcedureCall (f (Abstract.Designator l l f' f')) (Maybe (ZipList (f (Abstract.Expression l l f' f'))))
+                        | If (f (Abstract.ConditionalBranch l l f' f'))
+                             (ZipList (f (Abstract.ConditionalBranch l l f' f')))
                              (Maybe (f (Abstract.StatementSequence l l f' f')))
                         | CaseStatement (f (Abstract.Expression l l f' f')) 
-                                        (NonEmpty (f (Abstract.Case l l f' f'))) 
+                                        (ZipList (f (Abstract.Case l l f' f')))
                                         (Maybe (f (Abstract.StatementSequence l l f' f')))
                         | While (f (Abstract.Expression l l f' f')) (f (Abstract.StatementSequence l l f' f'))
                         | Repeat (f (Abstract.StatementSequence l l f' f')) (f (Abstract.Expression l l f' f'))

@@ -5,6 +5,7 @@ import Control.Applicative
 import Control.Monad (guard, void)
 import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
 import Data.List.NonEmpty (NonEmpty, toList)
+import Data.Maybe (catMaybes)
 import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
@@ -47,7 +48,7 @@ data Modula2Grammar l f p = Modula2Grammar {
    subrangeType :: p (Abstract.Type l l f f),
    arrayType :: p (Abstract.Type l l f f),
    recordType :: p (Abstract.Type l l f f),
-   fieldListSequence :: p (NonEmpty (f (Abstract.FieldList l l f f))),
+   fieldListSequence :: p [f (Abstract.FieldList l l f f)],
    fieldList :: p (Abstract.FieldList l l f f),
    variant :: p (Abstract.Variant l l f f),
    caseLabelList :: p (NonEmpty (f (Abstract.CaseLabels l l f f))),
@@ -152,13 +153,12 @@ grammar g@Modula2Grammar{..} = g{
    arrayType =
       Abstract.arrayType <$ keyword "ARRAY" <*> sepBy1 (wrap simpleType) (delimiter ",") <* keyword "OF" <*> wrap type_prod,
    recordType = Abstract.recordType <$ keyword "RECORD" <*> fieldListSequence <* keyword "END",
-   fieldListSequence = sepByNonEmpty (wrap fieldList) (delimiter ";"),
+   fieldListSequence = catMaybes <$> sepBy1 (optional $ wrap fieldList) (delimiter ";"),
    fieldList = (Abstract.fieldList <$> identList <* delimiter ":" <*> wrap type_prod
                 :: Parser g Text (Abstract.FieldList l l NodeWrap NodeWrap))
                <|> Abstract.caseFieldList <$ keyword "CASE" <*> optional (ident <* delimiter ":") <*> qualident
                                           <* keyword "OF" <*> sepByNonEmpty (wrap variant) (delimiter "|")
-                                          <*> moptional (toList <$ keyword "ELSE" <*> fieldListSequence) <* keyword "END"
-               <|> pure Abstract.emptyFieldList,
+                                          <*> moptional (keyword "ELSE" *> fieldListSequence) <* keyword "END",
    variant = Abstract.variant <$> caseLabelList <* delimiter ":" <*> fieldListSequence,
    caseLabelList = sepByNonEmpty (wrap caseLabels) (delimiter ","),
    caseLabels = Abstract.singleLabel <$> constExpression
@@ -204,13 +204,13 @@ grammar g@Modula2Grammar{..} = g{
                <?> "statement",
    assignment  =  Abstract.assignment <$> wrap designator <* delimiter ":=" <*> expression,
    procedureCall = Abstract.procedureCall <$> wrap designator <*> optional actualParameters,
-   statementSequence = Abstract.statementSequence <$> sepByNonEmpty (wrap statement) (delimiter ";"),
+   statementSequence = Abstract.statementSequence <$> sepBy1 (wrap statement) (delimiter ";"),
    ifStatement = Abstract.ifStatement <$ keyword "IF"
        <*> sepByNonEmpty (wrap $ Abstract.conditionalBranch <$> expression <* keyword "THEN" <*> wrap statementSequence)
                          (keyword "ELSIF")
        <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
    caseStatement = Abstract.caseStatement <$ keyword "CASE" <*> expression
-       <*  keyword "OF" <*> sepByNonEmpty (wrap case_prod) (delimiter "|")
+       <*  keyword "OF" <*> sepBy1 (wrap case_prod) (delimiter "|")
        <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
    case_prod = Abstract.caseAlternative <$> caseLabelList <* delimiter ":" <*> wrap statementSequence,
    whileStatement = Abstract.whileStatement <$ keyword "WHILE" <*> expression <* keyword "DO"

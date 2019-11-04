@@ -6,6 +6,7 @@ import Control.Applicative
 import Control.Monad (guard, void)
 import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
 import Data.List.NonEmpty (NonEmpty, toList)
+import Data.Maybe (catMaybes)
 import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
@@ -91,7 +92,9 @@ isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..})
                             <*> optional (keyword "BEGIN" *> wrap statementSequence)
                             <*> optional (keyword "EXCEPT" *> wrap statementSequence) <*> pure Nothing <* keyword "END",
       ReportGrammar.statement = ReportGrammar.statement reportGrammar <|> retryStatement,
-      ReportGrammar.case_prod = ReportGrammar.case_prod reportGrammar <|> pure Abstract.emptyCase,
+      ReportGrammar.caseStatement = Abstract.caseStatement <$ keyword "CASE" <*> expression
+       <*  keyword "OF" <*> (catMaybes <$> sepBy1 (optional $ wrap case_prod) (delimiter "|"))
+       <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
       ReportGrammar.factor = ReportGrammar.factor reportGrammar <<|> wrap arrayConstructor <<|> wrap recordConstructor,
       ReportGrammar.set = Abstract.set . Just <$> qualident <*> setConstructedValue,
       ReportGrammar.mulOperator = ReportGrammar.mulOperator reportGrammar

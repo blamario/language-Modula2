@@ -41,14 +41,14 @@ class Wirthy l => Modula2 l where
    procedureHeading :: Ident -> Maybe (f (FormalParameters l' l' f' f')) -> ProcedureHeading l l' f' f
    caseFieldList :: Maybe Ident -> QualIdent l' -> NonEmpty (f (Variant l' l' f' f')) -> [f (FieldList l' l' f' f')]
                  -> FieldList l l' f' f
-   variant :: NonEmpty (f (CaseLabels l' l' f' f')) -> NonEmpty (f (FieldList l' l' f' f')) -> Variant l l' f' f
+   variant :: NonEmpty (f (CaseLabels l' l' f' f')) -> [f (FieldList l' l' f' f')] -> Variant l l' f' f
 
    -- Type
    enumeration :: IdentList l' -> Type l l' f' f
    subRange :: Maybe (QualIdent l') -> f (ConstExpression l' l' f' f') -> f (ConstExpression l' l' f' f') -> Type l l' f' f
    arrayType :: [f (Type l' l' f' f')] -> f (Type l' l' f' f') -> Type l l' f' f
    setType :: f (Type l' l' f' f') -> Type l l' f' f
-   recordType :: NonEmpty (f (FieldList l' l' f' f')) -> Type l l' f' f
+   recordType :: [f (FieldList l' l' f' f')] -> Type l l' f' f
 
    -- Statement
    withStatement :: f (Designator l' l' f' f') -> f (StatementSequence l' l' f' f') -> Statement l l' f' f
