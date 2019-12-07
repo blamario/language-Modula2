@@ -13,11 +13,13 @@ module Language.Modula2.AST (module Language.Modula2.AST,
                              Oberon.RelOp(..)) where
 
 import Control.Applicative (ZipList(ZipList, getZipList))
+import Control.Monad (forM, mapM)
 import Data.Coerce (coerce)
 import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
+import qualified Transformation.Shallow.TH
 import qualified Transformation.Deep.TH
 import qualified Rank2 as Rank2
 import qualified Rank2.TH
@@ -389,6 +391,9 @@ deriving instance (Show (f (Abstract.Designator l l f' f')), Show (f (Abstract.E
                    Show (f (Abstract.Case l l f' f')), Show (f (Abstract.ConditionalBranch l l f' f')),
                    Show (f (Abstract.StatementSequence l l f' f'))) => Show (Statement λ l f' f)
 
-$(mconcat <$> mapM Transformation.Deep.TH.deriveAll
-  [''Module, ''Declaration, ''Type, ''Statement, ''Expression,
-   ''Designator, ''FieldList, ''Variant, ''ProcedureHeading])
+$(concat <$>
+  (forM [Rank2.TH.deriveFunctor, Rank2.TH.deriveFoldable, Rank2.TH.deriveTraversable,
+         Transformation.Shallow.TH.deriveAll, Transformation.Deep.TH.deriveAll] $
+   \derive-> mconcat <$> mapM derive
+             [''Module, ''Declaration, ''Type, ''Statement, ''Expression,
+              ''Designator, ''FieldList, ''Variant, ''ProcedureHeading]))
