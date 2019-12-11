@@ -2,7 +2,8 @@
 
 module Main where
 
-import Language.Modula2 (Placed, Version(Report, ISO), SomeVersion(SomeVersion), resolvePosition, resolvePositions)
+import Language.Modula2 (Placed, Version(Report, ISO), SomeVersion(SomeVersion), parseModule, parseAndCheckModule,
+                         resolvePosition, resolvePositions)
 import Language.Modula2.AST (Language, Module(..), StatementSequence, Statement, Expression)
 import qualified Language.Modula2.AST as AST
 import qualified Language.Modula2.Grammar as Grammar
@@ -39,7 +40,7 @@ import Prelude hiding (getLine, getContents, readFile)
 
 import Debug.Trace
 
-data GrammarMode = ModuleMode | StatementsMode | StatementMode | ExpressionMode
+data GrammarMode = CheckedModuleMode | ModuleMode | StatementsMode | StatementMode | ExpressionMode
     deriving Show
 
 data Output = Plain | Pretty Int | Tree
@@ -78,7 +79,8 @@ main = execParser opts >>= main'
               <> help "Modula2 file to parse"))
 
     mode :: Parser GrammarMode
-    mode = ModuleMode          <$ switch (long "module")
+    mode = CheckedModuleMode   <$ switch (long "checked-module")
+       <|> ModuleMode          <$ switch (long "module")
        <|> StatementMode       <$ switch (long "statement")
        <|> StatementsMode      <$ switch (long "statements")
        <|> ExpressionMode      <$ switch (long "expression")
@@ -94,7 +96,10 @@ main' Opts{..} =
          case optsFile of
              Just file -> (if file == "-" then getContents else readFile file)
                           >>= case optsMode
-                              of ModuleMode
+                              of CheckedModuleMode
+                                    | Report <- version -> \contents-> report contents (parseAndCheckModule Report contents)
+--                                    | ISO <- version -> \contents-> report contents (parseAndCheckModule ISO contents)
+                                 ModuleMode
                                     | Report <- version -> go Report Grammar.compilationUnit file
                                     | ISO <- version -> go ISO Grammar.compilationUnit file
                                  _ -> error "A file usually contains a whole module."

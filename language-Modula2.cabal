@@ -21,7 +21,7 @@ extra-source-files:  CHANGELOG.md
 library
   exposed-modules:     Language.Modula2,
                        Language.Modula2.Abstract, Language.Modula2.AST,
-                       Language.Modula2.Grammar, Language.Modula2.Pretty,
+                       Language.Modula2.Grammar, Language.Modula2.Pretty, Language.Modula2.ConstantFolder,
                        Language.Modula2.ISO.Abstract, Language.Modula2.ISO.AST,
                        Language.Modula2.ISO.Grammar, Language.Modula2.ISO.Pretty
   -- other-modules:

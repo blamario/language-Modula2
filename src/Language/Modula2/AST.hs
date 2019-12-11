@@ -6,6 +6,7 @@
 -- | Modula-2 Abstract Syntax Tree definitions
 
 module Language.Modula2.AST (module Language.Modula2.AST,
+                             Abstract.Ident,
                              Oberon.Value(..), Oberon.Element(..),
                              Oberon.FormalParameters(..), Oberon.FPSection(..),
                              Oberon.Block(..), Oberon.StatementSequence(..),
@@ -397,3 +398,7 @@ $(concat <$>
    \derive-> mconcat <$> mapM derive
              [''Module, ''Declaration, ''Type, ''Statement, ''Expression,
               ''Designator, ''FieldList, ''Variant, ''ProcedureHeading]))
+
+$(mconcat <$> mapM Rank2.TH.unsafeDeriveApply
+   [''Module, ''Declaration, ''Type, ''Statement, ''Expression,
+     ''Designator, ''FieldList, ''Variant, ''ProcedureHeading])
