@@ -60,8 +60,8 @@ main = execParser opts >>= main'
   where
     opts = info (helper <*> p)
         ( fullDesc
-       <> progDesc "Parse an Modula2 file, or parse interactively"
-       <> header "Modula2 parser")
+       <> progDesc "Parse a Modula-2 file, or parse interactively"
+       <> header "Modula-2 parser")
 
     p :: Parser Opts
     p = Opts
@@ -76,7 +76,7 @@ main = execParser opts >>= main'
                                  <> help "Where to look for imports"))
         <*> optional (strArgument
             ( metavar "FILE"
-              <> help "Modula2 file to parse"))
+              <> help "Modula-2 file to parse"))
 
     mode :: Parser GrammarMode
     mode = CheckedModuleMode   <$ switch (long "checked-module")
