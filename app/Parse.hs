@@ -131,7 +131,7 @@ main' Opts{..} =
      go ISO production filename contents =
         report contents (getCompose $ resolvePositions contents
                          <$> production (Rank2.snd $ parseComplete (ISO.Grammar.modula2ISOgrammar) contents))
-     report :: (Pretty a, Show a) => Text -> ParseResults [a] -> IO ()
+     report :: (Pretty a, Show a) => Text -> ParseResults Text [a] -> IO ()
      report _ (Right [x]) = succeed optsOutput x
      report _ (Right l) = putStrLn ("Ambiguous: " ++ show optsIndex ++ "/" ++ show (length l) ++ " parses")
                           >> succeed optsOutput (l !! optsIndex)

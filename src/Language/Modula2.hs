@@ -69,7 +69,7 @@ parseAndCheckModule :: forall l.
                         Atts (Inherited ConstantFold) (Abstract.Expression l l Sem Sem) ~ InhCF l,
                         Atts (Synthesized ConstantFold) (Abstract.Block l l Sem Sem) ~ SynCFMod' l (Abstract.Block l l),
                         Atts (Synthesized ConstantFold) (Abstract.Definition l l Sem Sem) ~ SynCFMod' l (Abstract.Definition l l),
-                        Atts (Synthesized ConstantFold) (Abstract.Expression l l Sem Sem) ~ SynCFExp l,
+                        Atts (Synthesized ConstantFold) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
                         Full.Functor ConstantFold (Abstract.Block l l),
                         Full.Functor ConstantFold (Abstract.Declaration l l),
                         Full.Functor ConstantFold (Abstract.Definition l l),
@@ -78,7 +78,7 @@ parseAndCheckModule :: forall l.
                         Deep.Functor ConstantFold (Abstract.Declaration l l),
                         Deep.Functor ConstantFold (Abstract.Expression l l),
                         Deep.Functor ConstantFold (Abstract.StatementSequence l l))
-                    => Version l -> Text -> ParseResults [Module l l Placed Placed]
+                    => Version l -> Text -> ParseResults Text [Module l l Placed Placed]
 parseAndCheckModule version source =
    (ConstantFolder.foldConstants (predefined $ SomeVersion version) <$>) <$> parseModule version source
    where predefined :: SomeVersion -> ConstantFolder.Environment l
@@ -92,14 +92,14 @@ parseAndCheckModule version source =
          predefined (SomeVersion ISO) = predefined (SomeVersion Report)
 
 -- | Parse the given text of a single module.
-parseModule :: Version l -> Text -> ParseResults [Module l l Placed Placed]
+parseModule :: Version l -> Text -> ParseResults Text [Module l l Placed Placed]
 parseModule Report source = resolve source (parseComplete Grammar.modula2grammar source)
 parseModule ISO source = resolve source (Rank2.snd $ parseComplete ISO.Grammar.modula2ISOgrammar source)
 
 resolve source results = getCompose (resolvePositions source <$> Grammar.compilationUnit results)
 
 {-
-parseNamedModule :: FilePath -> Text -> IO (ParseResults [Module Language Language Placed Placed])
+parseNamedModule :: FilePath -> Text -> IO (ParseResults Text [Module Language Language Placed Placed])
 parseNamedModule path name =
    do let basePath = combine path (unpack name)
       isDefn <- doesFileExist (addExtension basePath "Def")
