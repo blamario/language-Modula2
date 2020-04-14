@@ -1,4 +1,5 @@
-{-# Language OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables, TypeFamilies, TemplateHaskell #-}
+{-# Language FlexibleContexts, FlexibleInstances, OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables,
+             TypeFamilies, TypeSynonymInstances, TemplateHaskell #-}
 module Language.Modula2.Grammar where
 
 import Control.Applicative
@@ -101,7 +102,7 @@ modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
 
 {- Adjusted from Report on the Programming Language Modula-2 -}
-grammar :: forall l g. (Abstract.Modula2 l, Lexical g, LexicalConstraint Parser g Text)
+grammar :: forall l g. (Abstract.Modula2 l, LexicalParsing (Parser g Text))
         => GrammarBuilder (Modula2Grammar l NodeWrap) g Parser Text
 grammar g@Modula2Grammar{..} = g{
    ident = identifier,
@@ -282,8 +283,10 @@ newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l l f f)
 instance Show (BinOp l f) where
    show = const "BinOp{}"
 
-instance Lexical (Modula2Grammar l f) where
-   type LexicalConstraint p (Modula2Grammar l f) s = (s ~ Text, p ~ Parser)
+instance TokenParsing (Parser (Modula2Grammar l f) Text) where
+   someSpace = someLexicalSpace
+
+instance LexicalParsing (Parser (Modula2Grammar l f) Text) where
    lexicalComment = comment
    lexicalWhiteSpace = takeCharsWhile isSpace *> skipMany (lexicalComment *> takeCharsWhile isSpace)
    isIdentifierStartChar = isLetter
@@ -306,7 +309,7 @@ wrapBinary op a@(pos, _) b = (pos, op a b)
 
 moptional p = p <|> mempty
 
-delimiter, operator :: (Lexical g, LexicalConstraint Parser g Text) => Text -> Parser g Text ()
+delimiter, operator :: (LexicalParsing (Parser g Text)) => Text -> Parser g Text ()
 
 delimiter s = void (lexicalToken $ string s) <?> ("delimiter " <> show s)
 operator s = void (lexicalToken $ string s) <?> ("operator " <> show s)

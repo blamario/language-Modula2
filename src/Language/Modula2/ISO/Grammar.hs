@@ -1,4 +1,4 @@
-{-# Language FlexibleInstances, OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables,
+{-# Language FlexibleContexts, FlexibleInstances, OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables,
              TypeFamilies, TypeSynonymInstances, TemplateHaskell #-}
 module Language.Modula2.ISO.Grammar where
 
@@ -11,7 +11,7 @@ import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive (Parser, (<<|>))
+import Text.Grampa.ContextFree.LeftRecursive (Parser)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -39,7 +39,7 @@ data ISOMixin l f p = ISOMixin{
    arrayPart :: p (ISO.Abstract.Item l l f f),
    structureComponent  :: p (f (Abstract.Expression l l f f))}
 
-isoMixin :: (ISO.Abstract.Modula2 l, Lexical g, LexicalConstraint Parser g Text)
+isoMixin :: (ISO.Abstract.Modula2 l, LexicalParsing (Parser g Text))
          => ReportGrammar.Modula2Grammar l ReportGrammar.NodeWrap (Parser g Text)
          -> ISOMixin l ReportGrammar.NodeWrap (Parser g Text)
          -> ISOMixin l ReportGrammar.NodeWrap (Parser g Text)
@@ -73,7 +73,7 @@ modula2ISOgrammar :: Grammar (ISOGrammar AST.Language) Parser Text
 modula2ISOgrammar = fixGrammar isoGrammar
 
 {- Adjusted from Report on the Programming Language Modula-2 -}
-isoGrammar :: forall l g. (ISO.Abstract.Modula2 l, Lexical g, LexicalConstraint Parser g Text)
+isoGrammar :: forall l g. (ISO.Abstract.Modula2 l, LexicalParsing (Parser g Text))
            => GrammarBuilder (ISOGrammar l) g Parser Text
 isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..}) =
    Rank2.Pair (isoMixin report iso) $
@@ -102,8 +102,10 @@ isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..})
                                       <$> (ISO.Abstract.remainder <$ keyword "REM")}
    where reportGrammar = ReportGrammar.grammar report
 
-instance Lexical (ISOGrammar l) where
-   type LexicalConstraint p (ISOGrammar l) s = (s ~ Text, p ~ Parser)
+instance TokenParsing (Parser (ISOGrammar l) Text) where
+   someSpace = someLexicalSpace
+
+instance LexicalParsing (Parser (ISOGrammar l) Text) where
    lexicalComment = ReportGrammar.comment
    lexicalWhiteSpace = takeCharsWhile isSpace *> skipMany (lexicalComment *> takeCharsWhile isSpace)
    isIdentifierStartChar = isLetter
