@@ -126,11 +126,11 @@ main' Opts{..} =
         -> (forall p. Functor p => Grammar.Modula2Grammar l Grammar.NodeWrap p -> p (g l l Grammar.NodeWrap Grammar.NodeWrap))
         -> String -> Text -> IO ()
      go Report production filename contents =
-        report contents (getCompose $ resolvePositions contents
-                         <$> production (parseComplete Grammar.modula2grammar contents))
+        report contents (getCompose $ resolvePositions contents . snd
+                         <$> getCompose (production $ parseComplete Grammar.modula2grammar contents))
      go ISO production filename contents =
-        report contents (getCompose $ resolvePositions contents
-                         <$> production (Rank2.snd $ parseComplete (ISO.Grammar.modula2ISOgrammar) contents))
+        report contents (getCompose $ resolvePositions contents . snd
+                         <$> getCompose (production $ Rank2.snd $ parseComplete (ISO.Grammar.modula2ISOgrammar) contents))
      report :: (Pretty a, Show a) => Text -> ParseResults Text [a] -> IO ()
      report _ (Right [x]) = succeed optsOutput x
      report _ (Right l) = putStrLn ("Ambiguous: " ++ show optsIndex ++ "/" ++ show (length l) ++ " parses")

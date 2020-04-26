@@ -96,7 +96,10 @@ parseModule :: Version l -> Text -> ParseResults Text [Module l l Placed Placed]
 parseModule Report source = resolve source (parseComplete Grammar.modula2grammar source)
 parseModule ISO source = resolve source (Rank2.snd $ parseComplete ISO.Grammar.modula2ISOgrammar source)
 
-resolve source results = getCompose (resolvePositions source <$> Grammar.compilationUnit results)
+resolve :: Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) (Abstract.Module l l)
+        => Text -> Grammar.Modula2Grammar l Grammar.NodeWrap (Compose (Compose (ParseResults Text) []) ((,) [Grammar.Ignorables]))
+        -> ParseResults Text [Abstract.Module l l Placed Placed]
+resolve source results = getCompose (resolvePositions source . snd <$> getCompose (Grammar.compilationUnit results))
 
 {-
 parseNamedModule :: FilePath -> Text -> IO (ParseResults Text [Module Language Language Placed Placed])

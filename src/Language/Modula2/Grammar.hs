@@ -11,7 +11,7 @@ import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive (Parser)
+import Text.Grampa.ContextFree.LeftRecursive.Transformer (ParserT)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -19,6 +19,11 @@ import qualified Rank2.TH
 
 import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.AST as AST
+
+type Parser = ParserT ((,) [Ignorables])
+type Ignorables = [Either WhiteSpace Comment]
+newtype Comment    = Comment{getComment :: String} deriving Show
+newtype WhiteSpace = WhiteSpace String deriving Show
 
 -- | All the productions of the Modula-2 grammar
 data Modula2Grammar l f p = Modula2Grammar {

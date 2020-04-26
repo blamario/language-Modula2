@@ -11,7 +11,6 @@ import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive (Parser)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -24,6 +23,8 @@ import qualified Language.Modula2.ISO.Abstract as ISO.Abstract
 import qualified Language.Modula2.ISO.AST as AST
 import qualified Language.Modula2.Grammar as ReportGrammar
 import           Language.Modula2.Grammar (delimiter, wrap)
+
+type Parser = ReportGrammar.Parser
 
 data ISOMixin l f p = ISOMixin{
    machineAddress :: p (f (Abstract.ConstExpression l l f f)),
