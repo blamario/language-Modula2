@@ -302,7 +302,7 @@ instance LexicalParsing (Parser (Modula2Grammar l f) Text) where
 
 comment :: Parser g Text ()
 comment = try (string "(*"
-               *> skipMany (comment <|> notFollowedBy (string "*)") <* anyToken <* takeCharsWhile isCommentChar)
+               *> skipMany (comment <<|> notFollowedBy (string "*)") <* anyToken <* takeCharsWhile isCommentChar)
                <* string "*)")
    where isCommentChar c = c /= '*' && c /= '('
 
