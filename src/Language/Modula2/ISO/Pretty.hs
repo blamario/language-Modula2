@@ -135,6 +135,10 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.QualIdent l)) => Pretty (Expression Language l Identity Identity) where
    pretty e = pretty (Precedence 0 e)
 
+instance {-# OVERLAPS #-} Pretty (Abstract.Value l l Identity Identity) =>
+         Pretty (Report.Value Language l Identity Identity) where
+   pretty v = foldMap pretty (Abstract.coValue v :: Maybe (Report.Value Report.Language l Identity Identity))
+
 instance (Pretty (Abstract.Expression l l Identity Identity)) => Pretty (Item Language l Identity Identity) where
    pretty (Single e) = pretty e
    pretty (Repeated e count) = pretty e <+> "BY" <+> pretty count
