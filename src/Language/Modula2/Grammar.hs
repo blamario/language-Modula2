@@ -3,6 +3,7 @@
 module Language.Modula2.Grammar where
 
 import Control.Applicative
+import Control.Arrow (first)
 import Control.Monad (guard, void)
 import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
 import Data.List.NonEmpty (NonEmpty, toList)
@@ -11,7 +12,7 @@ import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive.Transformer (ParserT)
+import Text.Grampa.ContextFree.LeftRecursive.Transformer (ParserT, lift, tmap)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -22,8 +23,8 @@ import qualified Language.Modula2.AST as AST
 
 type Parser = ParserT ((,) [Ignorables])
 type Ignorables = [Either WhiteSpace Comment]
-newtype Comment    = Comment{getComment :: String} deriving Show
-newtype WhiteSpace = WhiteSpace String deriving Show
+newtype Comment    = Comment{getComment :: Text} deriving Show
+newtype WhiteSpace = WhiteSpace Text deriving Show
 
 -- | All the productions of the Modula-2 grammar
 data Modula2Grammar l f p = Modula2Grammar {
@@ -290,22 +291,27 @@ instance Show (BinOp l f) where
 
 instance TokenParsing (Parser (Modula2Grammar l f) Text) where
    someSpace = someLexicalSpace
+   token p = p <* lexicalWhiteSpace
 
 instance LexicalParsing (Parser (Modula2Grammar l f) Text) where
-   lexicalComment = comment
-   lexicalWhiteSpace = takeCharsWhile isSpace *> skipMany (lexicalComment *> takeCharsWhile isSpace)
+   lexicalComment = do c <- comment
+                       lift ([[Right $ Comment c]], ())
+   lexicalWhiteSpace = whiteSpace
    isIdentifierStartChar = isLetter
    isIdentifierFollowChar = isAlphaNum
    identifierToken word = lexicalToken (do w <- word
                                            guard (w `notElem` reservedWords)
                                            return w)
 
-comment :: Parser g Text ()
+comment :: Parser g Text Text
 comment = try (string "(*"
-               *> skipMany (comment <<|> notFollowedBy (string "*)") <* anyToken <* takeCharsWhile isCommentChar)
-               <* string "*)")
+               <> concatMany (comment <<|> notFollowedBy (string "*)") *> anyToken <> takeCharsWhile isCommentChar)
+               <> string "*)")
    where isCommentChar c = c /= '*' && c /= '('
 
+whiteSpace :: LexicalParsing (Parser g Text) => Parser g Text ()
+whiteSpace = tmap (first (\ws-> [concat ws])) ((\x-> lift [[Left $ WhiteSpace x]]) <$> takeCharsWhile isSpace)
+             *> skipMany (lexicalComment *> takeCharsWhile isSpace)
 wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
 wrap = ((,) <$> getSourcePos <*>)
 

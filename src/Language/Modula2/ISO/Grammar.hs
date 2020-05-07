@@ -11,6 +11,7 @@ import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
+import Text.Grampa.ContextFree.LeftRecursive.Transformer (lift)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -107,8 +108,9 @@ instance TokenParsing (Parser (ISOGrammar l) Text) where
    someSpace = someLexicalSpace
 
 instance LexicalParsing (Parser (ISOGrammar l) Text) where
-   lexicalComment = ReportGrammar.comment
-   lexicalWhiteSpace = takeCharsWhile isSpace *> skipMany (lexicalComment *> takeCharsWhile isSpace)
+   lexicalComment = do c <- ReportGrammar.comment
+                       lift ([[Right $ ReportGrammar.Comment c]], ())
+   lexicalWhiteSpace = ReportGrammar.whiteSpace
    isIdentifierStartChar = isLetter
    isIdentifierFollowChar c = isAlphaNum c || c == '_'
    identifierToken word = lexicalToken (do w <- word
