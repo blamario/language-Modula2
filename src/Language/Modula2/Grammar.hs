@@ -102,7 +102,12 @@ data Modula2Grammar l f p = Modula2Grammar {
    compilationUnit :: p (Abstract.Module l l f f)
    }
 
-type NodeWrap = (,) (Position Text)
+type NodeWrap = (,) (Position Text, ParsedIgnorables)
+
+data ParsedIgnorables = Trailing Ignorables
+                      | OperatorTrailing [Ignorables]
+                      | ParenthesesTrailing Ignorables ParsedIgnorables Ignorables
+                      deriving Show
 
 modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
@@ -313,7 +318,9 @@ whiteSpace :: LexicalParsing (Parser g Text) => Parser g Text ()
 whiteSpace = tmap (first (\ws-> [concat ws])) ((\x-> lift [[Left $ WhiteSpace x]]) <$> takeCharsWhile isSpace)
              *> skipMany (lexicalComment *> takeCharsWhile isSpace)
 wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
-wrap = ((,) <$> getSourcePos <*>)
+wrap = tmap store . ((,) <$> posAndWS <*>)
+   where posAndWS = liftA2 (,) getSourcePos (pure $ Trailing [])
+         store (wss, ((pos, Trailing ws'), a)) = (mempty, ((pos, Trailing $ ws' <> concat wss), a))
 
 wrapBinary :: (NodeWrap a -> NodeWrap a -> a) -> (NodeWrap a -> NodeWrap a -> NodeWrap a)
 wrapBinary op a@(pos, _) b = (pos, op a b)

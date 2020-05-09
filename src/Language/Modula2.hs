@@ -57,7 +57,7 @@ resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p
 resolvePositions src t = resolvePosition src Rank2.<$> t
 
 resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
-resolvePosition src = \(pos, a)-> (positionOffset src pos, a)
+resolvePosition src = \((pos, _ws), a)-> (positionOffset src pos, a)
 
 -- | Parse and check the given text of a single module.
 parseAndCheckModule :: forall l.
