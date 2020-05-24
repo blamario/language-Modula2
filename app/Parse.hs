@@ -121,7 +121,7 @@ main' Opts{..} =
                      StatementsMode -> go ISO Grammar.statementSequence "<stdin>"
                      ExpressionMode -> go ISO ((snd <$>) . Grammar.expression) "<stdin>"
      go :: (Show a, Pretty a, a ~ g l l Placed Placed,
-            Deep.Functor (Rank2.Map Grammar.NodeWrap NodeWrap) (g l l)) =>
+            Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) (g l l)) =>
            Version l
         -> (forall p. Functor p => Grammar.Modula2Grammar l Grammar.NodeWrap p -> p (g l l Grammar.NodeWrap Grammar.NodeWrap))
         -> String -> Text -> IO ()
@@ -148,18 +148,18 @@ succeed out x = case out
 
 instance Pretty (Module Language Language Placed Placed) where
    pretty m = pretty ((Identity . snd) Rank2.<$> m)
-instance Pretty (StatementSequence Language Language NodeWrap NodeWrap) where
+instance Pretty (StatementSequence Language Language Placed Placed) where
    pretty _ = error "Disambiguate before pretty-printing"
-instance Pretty (Statement Language Language NodeWrap NodeWrap) where
+instance Pretty (Statement Language Language Placed Placed) where
    pretty _ = error "Disambiguate before pretty-printing"
-instance Pretty (Expression Language Language NodeWrap NodeWrap) where
+instance Pretty (Expression Language Language Placed Placed) where
    pretty _ = error "Disambiguate before pretty-printing"
 
 instance Pretty (Module ISO.AST.Language ISO.AST.Language Placed Placed) where
    pretty m = pretty ((Identity . snd) Rank2.<$> m)
-instance Pretty (StatementSequence ISO.AST.Language ISO.AST.Language NodeWrap NodeWrap) where
+instance Pretty (StatementSequence ISO.AST.Language ISO.AST.Language Placed Placed) where
    pretty _ = error "Disambiguate before pretty-printing"
-instance Pretty (ISO.AST.Statement ISO.AST.Language ISO.AST.Language NodeWrap NodeWrap) where
+instance Pretty (ISO.AST.Statement ISO.AST.Language ISO.AST.Language Placed Placed) where
    pretty _ = error "Disambiguate before pretty-printing"
-instance Pretty (ISO.AST.Expression ISO.AST.Language ISO.AST.Language NodeWrap NodeWrap) where
+instance Pretty (ISO.AST.Expression ISO.AST.Language ISO.AST.Language Placed Placed) where
    pretty _ = error "Disambiguate before pretty-printing"

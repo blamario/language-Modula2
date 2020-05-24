@@ -35,7 +35,7 @@ import System.FilePath (FilePath, addExtension, combine, takeDirectory)
 
 import Prelude hiding (readFile)
 
-type Placed = ((,) Int)
+type Placed = (,) (Int, Grammar.ParsedIgnorables)
 
 data Options = Options{
    foldConstants :: Bool,
@@ -57,7 +57,7 @@ resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p
 resolvePositions src t = resolvePosition src Rank2.<$> t
 
 resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
-resolvePosition src = \((pos, _ws), a)-> (positionOffset src pos, a)
+resolvePosition src = \((pos, ws), a)-> ((positionOffset src pos, ws), a)
 
 -- | Parse and check the given text of a single module.
 parseAndCheckModule :: forall l.
