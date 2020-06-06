@@ -1,7 +1,6 @@
 {-# Language FlexibleContexts, FlexibleInstances, OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables,
              TypeFamilies, TypeSynonymInstances, TemplateHaskell #-}
-module Language.Modula2.Grammar (module Language.Modula2.Grammar,
-                                 Parser, ParsedIgnorables(..), Comment(..), WhiteSpace(..)) where
+module Language.Modula2.Grammar (module Language.Modula2.Grammar, Lexeme(..), ParsedLexemes(..)) where
 
 import Control.Applicative
 import Control.Arrow (first)
@@ -18,13 +17,12 @@ import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
 import qualified Rank2.TH
-import Language.Oberon.Grammar (ParsedIgnorables(..), Comment(..), WhiteSpace(..))
+import Language.Oberon.Grammar (Lexeme(..), ParsedLexemes(Trailing))
 
 import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.AST as AST
 
-type Parser = ParserT ((,) [Ignorables])
-type Ignorables = [Either WhiteSpace Comment]
+type Parser = ParserT ((,) [[Lexeme]])
 
 -- | All the productions of the Modula-2 grammar
 data Modula2Grammar l f p = Modula2Grammar {
@@ -102,7 +100,7 @@ data Modula2Grammar l f p = Modula2Grammar {
    compilationUnit :: p (Abstract.Module l l f f)
    }
 
-type NodeWrap = (,) (Position Text, ParsedIgnorables)
+type NodeWrap = (,) (Position Text, ParsedLexemes)
 
 modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
@@ -295,7 +293,7 @@ instance TokenParsing (Parser (Modula2Grammar l f) Text) where
 
 instance LexicalParsing (Parser (Modula2Grammar l f) Text) where
    lexicalComment = do c <- comment
-                       lift ([[Right $ Comment c]], ())
+                       lift ([[Comment c]], ())
    lexicalWhiteSpace = whiteSpace
    isIdentifierStartChar = isLetter
    isIdentifierFollowChar = isAlphaNum

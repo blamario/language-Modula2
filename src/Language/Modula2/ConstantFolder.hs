@@ -32,7 +32,7 @@ import Transformation.AG (Attribution(..), Atts, Inherited(..), Synthesized(..),
 
 import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.AST as AST
-import Language.Modula2.Grammar (ParsedIgnorables(Trailing))
+import Language.Modula2.Grammar (ParsedLexemes(Trailing))
 import qualified Language.Oberon.Abstract as Oberon.Abstract
 import qualified Language.Oberon.AST as Oberon.AST
 import qualified Language.Oberon.ConstantFolder as Oberon
@@ -404,7 +404,7 @@ minReal = encodeFloat (floatRadix x - 1) (fst (floatRange x))
 foldBinaryArithmetic :: forall λ l f. (f ~ Placed,
                                        Abstract.Expression λ ~ AST.Expression λ, Abstract.Value l ~ AST.Value l,
                                        Abstract.Wirthy λ, Abstract.CoWirthy λ) =>
-                        (Int, ParsedIgnorables)
+                        (Int, ParsedLexemes)
                      -> (f (Abstract.Expression λ l f f) -> f (Abstract.Expression λ l f f) -> AST.Expression λ l f f)
                      -> (forall n. Num n => n -> n -> n)
                      -> SynCFExp λ l -> SynCFExp λ l -> SynCFExp λ l
@@ -423,7 +423,7 @@ foldBinaryArithmetic pos node op l r = case join (foldValues <$> foldedValue l <
 foldBinaryFractional :: forall λ l f. (f ~ Placed,
                                        Abstract.Expression λ ~ AST.Expression λ, Abstract.Value l ~ AST.Value l,
                                        Abstract.Wirthy λ, Abstract.CoWirthy λ) =>
-                        (Int, ParsedIgnorables)
+                        (Int, ParsedLexemes)
                      -> (f (Abstract.Expression λ l f f) -> f (Abstract.Expression λ l f f) -> AST.Expression λ l f f)
                      -> (forall n. Fractional n => n -> n -> n)
                      -> SynCFExp λ l -> SynCFExp λ l -> SynCFExp λ l
@@ -439,7 +439,7 @@ foldBinaryFractional pos node op l r = case join (foldValues <$> foldedValue l <
 foldBinaryInteger :: forall λ l f. (f ~ Placed,
                                     Abstract.Expression λ ~ AST.Expression λ, Abstract.Value l ~ AST.Value l,
                                     Abstract.Wirthy λ, Abstract.CoWirthy λ) =>
-                        (Int, ParsedIgnorables)
+                        (Int, ParsedLexemes)
                      -> (f (Abstract.Expression λ l f f) -> f (Abstract.Expression λ l f f) -> AST.Expression λ l f f)
                      -> (forall n. Integral n => n -> n -> n)
                      -> SynCFExp λ l -> SynCFExp λ l -> SynCFExp λ l
@@ -455,7 +455,7 @@ foldBinaryInteger pos node op l r = case join (foldValues <$> foldedValue l <*> 
 foldBinaryBoolean :: forall λ l f. (f ~ Placed,
                                     Abstract.Expression λ ~ AST.Expression λ, Abstract.Value l ~ AST.Value l,
                                     Abstract.Wirthy λ, Abstract.CoWirthy λ) =>
-                     (Int, ParsedIgnorables)
+                     (Int, ParsedLexemes)
                   -> (f (Abstract.Expression λ l f f) -> f (Abstract.Expression λ l f f) -> AST.Expression λ l f f)
                   -> (Bool -> Bool -> Bool)
                   -> SynCFExp λ l -> SynCFExp λ l -> SynCFExp λ l
@@ -506,7 +506,7 @@ instance Full.Functor (ConstantFoldSyn l) (AST.Designator l l) where
 
 -- * Unsafe Rank2 AST instances
 
-type Placed = (,) (Int, ParsedIgnorables)
+type Placed = (,) (Int, ParsedLexemes)
 
 $(do l <- varT  <$> newName "l"
      mconcat <$> mapM (\g-> Transformation.Full.TH.deriveUpFunctor (conT ''ConstantFold) $ conT g `appT` l `appT` l)

@@ -35,7 +35,7 @@ import System.FilePath (FilePath, addExtension, combine, takeDirectory)
 
 import Prelude hiding (readFile)
 
-type Placed = (,) (Int, Grammar.ParsedIgnorables)
+type Placed = (,) (Int, Grammar.ParsedLexemes)
 
 data Options = Options{
    foldConstants :: Bool,
@@ -97,7 +97,7 @@ parseModule Report source = resolve source (parseComplete Grammar.modula2grammar
 parseModule ISO source = resolve source (Rank2.snd $ parseComplete ISO.Grammar.modula2ISOgrammar source)
 
 resolve :: Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) (Abstract.Module l l)
-        => Text -> Grammar.Modula2Grammar l Grammar.NodeWrap (Compose (Compose (ParseResults Text) []) ((,) [Grammar.Ignorables]))
+        => Text -> Grammar.Modula2Grammar l Grammar.NodeWrap (Compose (Compose (ParseResults Text) []) ((,) [[Grammar.Lexeme]]))
         -> ParseResults Text [Abstract.Module l l Placed Placed]
 resolve source results = getCompose (resolvePositions source . snd <$> getCompose (Grammar.compilationUnit results))
 

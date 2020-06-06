@@ -109,7 +109,7 @@ instance TokenParsing (Parser (ISOGrammar l) Text) where
 
 instance LexicalParsing (Parser (ISOGrammar l) Text) where
    lexicalComment = do c <- ReportGrammar.comment
-                       lift ([[Right $ ReportGrammar.Comment c]], ())
+                       lift ([[ReportGrammar.Comment c]], ())
    lexicalWhiteSpace = ReportGrammar.whiteSpace
    isIdentifierStartChar = isLetter
    isIdentifierFollowChar c = isAlphaNum c || c == '_'
