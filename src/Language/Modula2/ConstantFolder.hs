@@ -336,6 +336,9 @@ instance (Abstract.CoWirthy l, Abstract.Nameable l, Ord (Abstract.QualIdent l),
                        foldedValue= Nothing}
       where literalSynthesis value = SynCFExp{foldedExp= (pos, Abstract.literal (pos, value)),
                                               foldedValue= Just value}
+   synthesis ConstantFold (pos, _) _ (AST.Literal val) =
+      SynCFExp{foldedExp= (pos, AST.Literal (folded $ syn val)),
+               foldedValue= Just (snd $ folded $ syn val)}
 
 {-
          _ -> let s :: Atts (Synthesized ConstantFold) (Oberon.AST.Expression l l Sem Sem)
@@ -349,9 +352,6 @@ instance (Abstract.CoWirthy l, Abstract.Nameable l, Ord (Abstract.QualIdent l),
                           foldedValue= foldedValue s}
       where literalSynthesis value = SynCFExp{foldedExp= (pos, Abstract.literal (pos, value)),
                                               foldedValue= Just value}
-   synthesis ConstantFold (pos, _) _ (AST.Literal val) =
-      SynCFExp{foldedExp= (pos, AST.Literal (folded $ syn val)),
-               foldedValue= Just (snd $ folded $ syn val)}
    synthesis ConstantFold (pos, e) inheritance e'
       | Just eO <- (Abstract.coExpression e :: Maybe (Abstract.Expression Oberon.AST.Language l Sem Sem)),
         Just e'O <- (Abstract.coExpression e' :: Maybe (Abstract.Expression Oberon.AST.Language l Sem (Synthesized ConstantFold))),
