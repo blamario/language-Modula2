@@ -106,6 +106,7 @@ isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..})
 
 instance TokenParsing (Parser (ISOGrammar l) Text) where
    someSpace = someLexicalSpace
+   token p = p <* lexicalWhiteSpace
 
 instance LexicalParsing (Parser (ISOGrammar l) Text) where
    lexicalComment = do c <- ReportGrammar.comment

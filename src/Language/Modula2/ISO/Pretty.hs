@@ -51,7 +51,7 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
           Pretty (Abstract.Block l l Identity Identity)) =>
          Pretty (Declaration True Language l Identity Identity) where
    pretty (AddressedVariableDeclaration vars varType) =
-      "VAR" <+> hsep (punctuate comma $ pretty <$> toList vars) <+> colon <+> pretty varType <> semi
+      "VAR" <+> hsep (punctuate comma $ pretty <$> toList vars) <> colon <+> pretty varType <> semi
    pretty (ForwardProcedureDeclaration heading) = pretty heading <> semi <> "FORWARD" <> semi
    pretty (ModuleDeclaration name priority imports export body) =
       vsep $ intersperse mempty $

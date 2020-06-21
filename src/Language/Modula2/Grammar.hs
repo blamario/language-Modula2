@@ -110,7 +110,7 @@ grammar :: forall l g. (Abstract.Modula2 l, LexicalParsing (Parser g Text))
         => GrammarBuilder (Modula2Grammar l NodeWrap) g Parser Text
 grammar g@Modula2Grammar{..} = g{
    ident = identifier,
-   number = integer <|> real,
+   number = integer <|> real <?> "a number",
    integer = lexicalToken (Abstract.integer . fst . head
                            <$> (readDec . unpack <$> takeCharsWhile1 isDigit
                                 <|> readOct . unpack <$> takeCharsWhile1 isOctDigit <* string "B"
@@ -310,6 +310,8 @@ comment = try (string "(*"
 whiteSpace :: LexicalParsing (Parser g Text) => Parser g Text ()
 whiteSpace = tmap (first (\ws-> [concat ws])) ((\x-> lift [[Left $ WhiteSpace x]]) <$> takeCharsWhile isSpace)
              *> skipMany (lexicalComment *> takeCharsWhile isSpace)
+             <?> "whitespace"
+
 wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
 wrap = tmap store . ((,) <$> posAndWS <*>)
    where posAndWS = liftA2 (,) getSourcePos (pure $ Trailing [])
