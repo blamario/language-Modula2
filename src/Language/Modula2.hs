@@ -28,8 +28,9 @@ import Data.Map.Lazy (Map)
 import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
-import Text.Grampa (Ambiguous, Grammar, ParseResults, parseComplete, failureDescription, positionOffset)
+import Text.Grampa (Ambiguous, Grammar, ParseResults, parseComplete, failureDescription)
 import qualified Text.Grampa.ContextFree.LeftRecursive as LeftRecursive
+import qualified Text.Parser.Input.Position as Position
 import System.Directory (doesFileExist)
 import System.FilePath (FilePath, addExtension, combine, takeDirectory)
 
@@ -57,7 +58,7 @@ resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p
 resolvePositions src t = resolvePosition src Rank2.<$> t
 
 resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
-resolvePosition src = \((pos, ws), a)-> ((positionOffset src pos, ws), a)
+resolvePosition src = \((pos, ws), a)-> ((Position.offset src pos, ws), a)
 
 -- | Parse and check the given text of a single module.
 parseAndCheckModule :: forall l.

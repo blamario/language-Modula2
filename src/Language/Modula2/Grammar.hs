@@ -100,7 +100,7 @@ data Modula2Grammar l f p = Modula2Grammar {
    compilationUnit :: p (Abstract.Module l l f f)
    }
 
-type NodeWrap = (,) (Position Text, ParsedLexemes)
+type NodeWrap = (,) (Position, ParsedLexemes)
 
 modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
