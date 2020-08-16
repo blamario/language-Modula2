@@ -15,7 +15,7 @@ import Language.Modula2.Pretty ()
 import Language.Modula2.ISO.Pretty ()
 
 import qualified Rank2 as Rank2 (snd)
-import Transformation.AG (Atts, Inherited, Synthesized)
+import Transformation.AG (Atts, Inherited, Synthesized, Auto)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Full as Full
 import qualified Transformation.Deep as Deep
@@ -65,20 +65,22 @@ parseAndCheckModule :: forall l.
                        (Abstract.Modula2 l, Abstract.Nameable l,
                         Ord (Abstract.QualIdent l), Show (Abstract.QualIdent l),
                         Abstract.Expression l ~ Report.Expression l,
-                        Atts (Inherited ConstantFold) (Abstract.Block l l Sem Sem) ~ InhCF l,
-                        Atts (Inherited ConstantFold) (Abstract.Definition l l Sem Sem) ~ InhCF l,
-                        Atts (Inherited ConstantFold) (Abstract.Expression l l Sem Sem) ~ InhCF l,
-                        Atts (Synthesized ConstantFold) (Abstract.Block l l Sem Sem) ~ SynCFMod' l (Abstract.Block l l),
-                        Atts (Synthesized ConstantFold) (Abstract.Definition l l Sem Sem) ~ SynCFMod' l (Abstract.Definition l l),
-                        Atts (Synthesized ConstantFold) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
-                        Full.Functor ConstantFold (Abstract.Block l l),
-                        Full.Functor ConstantFold (Abstract.Declaration l l),
-                        Full.Functor ConstantFold (Abstract.Definition l l),
-                        Full.Functor ConstantFold (Abstract.Expression l l),
-                        Full.Functor ConstantFold (Abstract.StatementSequence l l),
-                        Deep.Functor ConstantFold (Abstract.Declaration l l),
-                        Deep.Functor ConstantFold (Abstract.Expression l l),
-                        Deep.Functor ConstantFold (Abstract.StatementSequence l l))
+                        Atts (Inherited (Auto ConstantFold)) (Abstract.Block l l Sem Sem) ~ InhCF l,
+                        Atts (Inherited (Auto ConstantFold)) (Abstract.Definition l l Sem Sem) ~ InhCF l,
+                        Atts (Inherited (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ InhCF l,
+                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Block l l Sem Sem)
+                        ~ SynCFMod' l (Abstract.Block l l),
+                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Definition l l Sem Sem)
+                        ~ SynCFMod' l (Abstract.Definition l l),
+                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
+                        Full.Functor (Auto ConstantFold) (Abstract.Block l l),
+                        Full.Functor (Auto ConstantFold) (Abstract.Declaration l l),
+                        Full.Functor (Auto ConstantFold) (Abstract.Definition l l),
+                        Full.Functor (Auto ConstantFold) (Abstract.Expression l l),
+                        Full.Functor (Auto ConstantFold) (Abstract.StatementSequence l l),
+                        Deep.Functor (Auto ConstantFold) (Abstract.Declaration l l),
+                        Deep.Functor (Auto ConstantFold) (Abstract.Expression l l),
+                        Deep.Functor (Auto ConstantFold) (Abstract.StatementSequence l l))
                     => Version l -> Text -> ParseResults Text [Module l l Placed Placed]
 parseAndCheckModule version source =
    (ConstantFolder.foldConstants (predefined $ SomeVersion version) <$>) <$> parseModule version source
@@ -98,7 +100,8 @@ parseModule Report source = resolve source (parseComplete Grammar.modula2grammar
 parseModule ISO source = resolve source (Rank2.snd $ parseComplete ISO.Grammar.modula2ISOgrammar source)
 
 resolve :: Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) (Abstract.Module l l)
-        => Text -> Grammar.Modula2Grammar l Grammar.NodeWrap (Compose (Compose (ParseResults Text) []) ((,) [[Grammar.Lexeme]]))
+        => Text
+        -> Grammar.Modula2Grammar l Grammar.NodeWrap (Compose (Compose (ParseResults Text) []) ((,) [[Grammar.Lexeme]]))
         -> ParseResults Text [Abstract.Module l l Placed Placed]
 resolve source results = getCompose (resolvePositions source . snd <$> getCompose (Grammar.compilationUnit results))
 
