@@ -9,6 +9,7 @@ import qualified Language.Modula2.AST as AST
 import qualified Language.Modula2.Grammar as Grammar
 import qualified Language.Modula2.ISO.AST as ISO.AST
 import qualified Language.Modula2.ISO.Grammar as ISO.Grammar
+import qualified Language.Modula2.ConstantFolder -- brings in HasField instances
 
 import qualified Rank2 as Rank2 (Product(Pair), snd)
 import qualified Transformation.Rank2 as Rank2

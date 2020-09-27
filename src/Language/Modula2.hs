@@ -15,7 +15,8 @@ import Language.Modula2.Pretty ()
 import Language.Modula2.ISO.Pretty ()
 
 import qualified Rank2 as Rank2 (snd)
-import Transformation.AG (Atts, Inherited, Synthesized, Auto)
+import Transformation.AG (Atts, Inherited, Synthesized)
+import Transformation.AG.Generics (Auto)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Full as Full
 import qualified Transformation.Deep as Deep
