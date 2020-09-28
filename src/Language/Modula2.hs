@@ -71,17 +71,16 @@ parseAndCheckModule :: forall l.
                         Atts (Inherited (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ InhCF l,
                         Atts (Synthesized (Auto ConstantFold)) (Abstract.Block l l Sem Sem)
                         ~ SynCFMod' l (Abstract.Block l l),
+                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Block l l Placed Placed)
+                        ~ SynCFMod' l (Abstract.Block l l),
+                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Definition l l Placed Placed)
+                        ~ SynCFMod' l (Abstract.Definition l l),
                         Atts (Synthesized (Auto ConstantFold)) (Abstract.Definition l l Sem Sem)
                         ~ SynCFMod' l (Abstract.Definition l l),
                         Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
                         Full.Functor (Auto ConstantFold) (Abstract.Block l l),
-                        Full.Functor (Auto ConstantFold) (Abstract.Declaration l l),
                         Full.Functor (Auto ConstantFold) (Abstract.Definition l l),
-                        Full.Functor (Auto ConstantFold) (Abstract.Expression l l),
-                        Full.Functor (Auto ConstantFold) (Abstract.StatementSequence l l),
-                        Deep.Functor (Auto ConstantFold) (Abstract.Declaration l l),
-                        Deep.Functor (Auto ConstantFold) (Abstract.Expression l l),
-                        Deep.Functor (Auto ConstantFold) (Abstract.StatementSequence l l))
+                        Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
                     => Version l -> Text -> ParseResults Text [Module l l Placed Placed]
 parseAndCheckModule version source =
    (ConstantFolder.foldConstants (predefined $ SomeVersion version) <$>) <$> parseModule version source
