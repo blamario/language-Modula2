@@ -65,7 +65,6 @@ resolvePosition src = \((pos, ws), a)-> ((Position.offset src pos, ws), a)
 parseAndCheckModule :: forall l.
                        (Abstract.Modula2 l, Abstract.Nameable l,
                         Ord (Abstract.QualIdent l), Show (Abstract.QualIdent l),
-                        Abstract.Expression l ~ Report.Expression l,
                         Atts (Inherited (Auto ConstantFold)) (Abstract.Block l l Sem Sem) ~ InhCF l,
                         Atts (Inherited (Auto ConstantFold)) (Abstract.Definition l l Sem Sem) ~ InhCF l,
                         Atts (Inherited (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ InhCF l,
@@ -78,6 +77,7 @@ parseAndCheckModule :: forall l.
                         Atts (Synthesized (Auto ConstantFold)) (Abstract.Definition l l Sem Sem)
                         ~ SynCFMod' l (Abstract.Definition l l),
                         Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
+                         Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Placed Placed) ~ SynCFExp l l,
                         Full.Functor (Auto ConstantFold) (Abstract.Block l l),
                         Full.Functor (Auto ConstantFold) (Abstract.Definition l l),
                         Full.Functor (Auto ConstantFold) (Abstract.Expression l l))

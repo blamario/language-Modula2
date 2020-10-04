@@ -47,7 +47,6 @@ import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Sem, Environm
 
 foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
                             Ord (Abstract.QualIdent l), Show (Abstract.QualIdent l),
-                            Abstract.Expression l ~ AST.Expression l,
                             Atts (Inherited (Auto ConstantFold)) (Abstract.Block l l Sem Sem) ~ InhCF l,
                             Atts (Inherited (Auto ConstantFold)) (Abstract.Definition l l Sem Sem) ~ InhCF l,
                             Atts (Inherited (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ InhCF l,
@@ -60,6 +59,8 @@ foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
                             Atts (Synthesized (Auto ConstantFold)) (Abstract.Definition l l Placed Placed)
                             ~ SynCFMod' l (Abstract.Definition l l),
                             Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
+                            Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Placed Placed)
+                            ~ SynCFExp l l,
                             Full.Functor (Auto ConstantFold) (Abstract.Block l l),
                             Full.Functor (Auto ConstantFold) (Abstract.Definition l l),
                             Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
@@ -176,8 +177,6 @@ instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord
 instance (Abstract.Nameable l, Ord (Abstract.QualIdent l), Abstract.Modula2 λ,
           Abstract.Value l ~ AST.Value l, Abstract.QualIdent l ~ AST.QualIdent l,
           InhCF l ~ InhCF λ,
---          Abstract.Value l ~ Abstract.Value Oberon.AST.Language,
-          Atts (Inherited (Auto ConstantFold)) (Oberon.AST.Expression l l Sem Sem) ~ InhCF l,
           Atts (Inherited (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ InhCF l,
           Atts (Inherited (Auto ConstantFold)) (Abstract.Element l l Sem Sem) ~ InhCF l,
           Atts (Inherited (Auto ConstantFold)) (Abstract.Designator l l Sem Sem) ~ InhCF l,

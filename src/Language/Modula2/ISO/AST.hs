@@ -404,3 +404,6 @@ $(concat <$>
          Transformation.Shallow.TH.deriveAll, Transformation.Deep.TH.deriveAll] $
    \derive-> mconcat <$> mapM derive
              [''AddressedIdent, ''Block, ''Declaration, ''Expression, ''Item, ''Statement, ''Type, ''Variant]))
+
+$(mconcat <$> mapM Rank2.TH.unsafeDeriveApply
+   [''AddressedIdent, ''Block, ''Declaration, ''Type, ''Statement, ''Expression, ''Item, ''Variant])
