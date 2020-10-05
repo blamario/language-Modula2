@@ -216,8 +216,8 @@ instance Abstract.Modula2 Language where
    recordType = RecordType . ZipList
 
    procedureHeading = ProcedureHeading
-   caseFieldList n t variants fallback = CaseFieldList n t variants (ZipList fallback)
-   variant cases fields = Variant cases (ZipList fields)
+   caseFieldList n t (variant :| variants) fallback = CaseFieldList n t variant (ZipList variants) (ZipList fallback)
+   variant (case1 :| cases) fields = Variant case1 (ZipList cases) (ZipList fields)
 
    forStatement = For
    withStatement = With
@@ -340,11 +340,13 @@ deriving instance (Show (Abstract.QualIdent l), Show (Abstract.IdentList l), Sho
                   Show (Type λ l f' f)
 
 data FieldList λ l f' f = FieldList (Abstract.IdentList l) (f (Abstract.Type l l f' f'))
-                        | CaseFieldList (Maybe Ident) (Abstract.QualIdent l) (NonEmpty (f (Abstract.Variant l l f' f')))
+                        | CaseFieldList (Maybe Ident) (Abstract.QualIdent l)
+                                        (f (Abstract.Variant l l f' f')) (ZipList (f (Abstract.Variant l l f' f')))
                                         (ZipList (f (Abstract.FieldList l l f' f')))
 
 data Variant λ l f' f =
-  Variant (NonEmpty (f (Abstract.CaseLabels l l f' f'))) (ZipList (f (Abstract.FieldList l l f' f')))
+  Variant (f (Abstract.CaseLabels l l f' f')) (ZipList (f (Abstract.CaseLabels l l f' f')))
+          (ZipList (f (Abstract.FieldList l l f' f')))
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f',
                    Data (Abstract.QualIdent l), Data (Abstract.IdentList l), Data (f (Abstract.Type l l f' f')),

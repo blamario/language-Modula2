@@ -50,8 +50,8 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
           Pretty (Abstract.ProcedureHeading l l Identity Identity),
           Pretty (Abstract.Block l l Identity Identity)) =>
          Pretty (Declaration True Language l Identity Identity) where
-   pretty (AddressedVariableDeclaration vars varType) =
-      "VAR" <+> hsep (punctuate comma $ pretty <$> toList vars) <> colon <+> pretty varType <> semi
+   pretty (AddressedVariableDeclaration var vars varType) =
+      "VAR" <+> hsep (punctuate comma $ pretty <$> (var : getZipList vars)) <> colon <+> pretty varType <> semi
    pretty (ForwardProcedureDeclaration heading) = pretty heading <> semi <> "FORWARD" <> semi
    pretty (ModuleDeclaration name priority imports export body) =
       vsep $ intersperse mempty $
@@ -92,7 +92,7 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (A
 instance (Pretty (Abstract.CaseLabels l l Identity Identity), Pretty (Abstract.FieldList l l Identity Identity)) =>
          Pretty (Variant λ l Identity Identity) where
    pretty EmptyVariant = mempty
-   pretty (Variant labels fields) = pretty (Report.Variant labels fields)
+   pretty (Variant label labels fields) = pretty (Report.Variant label labels fields)
 
 instance (Pretty (Abstract.Declaration l l Identity Identity), Pretty (Abstract.StatementSequence l l Identity Identity)) =>
          Pretty (Block λ l Identity Identity) where

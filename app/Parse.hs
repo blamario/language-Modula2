@@ -2,7 +2,7 @@
 
 module Main where
 
-import Language.Modula2 (Placed, Version(Report, ISO), SomeVersion(SomeVersion), parseModule, parseAndCheckModule,
+import Language.Modula2 (Placed, Version(Report, ISO), SomeVersion(SomeVersion), parseModule, parseAndSimplifyModule,
                          resolvePosition, resolvePositions)
 import Language.Modula2.AST (Language, Module(..), StatementSequence, Statement, Expression)
 import Language.Modula2.ConstantFolder (ConstantFold)
@@ -46,7 +46,7 @@ import Prelude hiding (getLine, getContents, readFile)
 
 import Debug.Trace
 
-data GrammarMode = CheckedModuleMode | ModuleMode | StatementsMode | StatementMode | ExpressionMode
+data GrammarMode = SimplifiedModuleMode | ModuleMode | StatementsMode | StatementMode | ExpressionMode
     deriving Show
 
 data Output = Plain | Pretty Int | Tree
@@ -85,7 +85,7 @@ main = execParser opts >>= main'
               <> help "Modula-2 file to parse"))
 
     mode :: Parser GrammarMode
-    mode = CheckedModuleMode   <$ switch (long "checked-module")
+    mode = SimplifiedModuleMode   <$ switch (long "simplified-module")
        <|> ModuleMode          <$ switch (long "module")
        <|> StatementMode       <$ switch (long "statement")
        <|> StatementsMode      <$ switch (long "statements")
@@ -103,10 +103,10 @@ main' Opts{..} =
          case optsFile of
              Just file -> (if file == "-" then getContents else readFile file)
                           >>= case optsMode
-                              of CheckedModuleMode ->
+                              of SimplifiedModuleMode ->
                                     \contents-> case version
-                                                of Report -> report contents (parseAndCheckModule Report contents)
-                                                   ISO -> report contents (parseAndCheckModule ISO contents)
+                                                of Report -> report contents (parseAndSimplifyModule Report contents)
+                                                   ISO -> report contents (parseAndSimplifyModule ISO contents)
                                  ModuleMode
                                     | Report <- version -> go Report Grammar.compilationUnit file
                                     | ISO <- version -> go ISO Grammar.compilationUnit file

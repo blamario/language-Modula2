@@ -1,6 +1,6 @@
 {-# Language FlexibleContexts, GADTs, OverloadedStrings, ScopedTypeVariables, StandaloneDeriving, TypeFamilies #-}
 
-module Language.Modula2 (parseModule, parseAndCheckModule, resolvePosition, resolvePositions,
+module Language.Modula2 (parseModule, parseAndSimplifyModule, resolvePosition, resolvePositions,
                          Placed, Version(..), SomeVersion(..)) where
 
 import qualified Language.Modula2.Abstract as Abstract
@@ -62,12 +62,12 @@ resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
 resolvePosition src = \((pos, ws), a)-> ((Position.offset src pos, ws), a)
 
 -- | Parse and check the given text of a single module.
-parseAndCheckModule :: (Abstract.Modula2 l, Abstract.Nameable l,
+parseAndSimplifyModule :: (Abstract.Modula2 l, Abstract.Nameable l,
                         Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
                     => Version l -> Text -> ParseResults Text [Abstract.Module l l Placed Placed]
-parseAndCheckModule Report source =
+parseAndSimplifyModule Report source =
    (ConstantFolder.foldConstants (predefined Report) <$>) <$> parseModule Report source
-parseAndCheckModule ISO source =
+parseAndSimplifyModule ISO source =
    (ISO.ConstantFolder.foldConstants (predefined ISO) <$>) <$> parseModule ISO source
 
 predefined :: (Abstract.Modula2 l, Ord (Abstract.QualIdent l)) => Version l -> ConstantFolder.Environment l

@@ -218,8 +218,8 @@ instance Abstract.Modula2 Language where
    recordType = RecordType . ZipList
 
    procedureHeading = ProcedureHeading
-   caseFieldList n t variants fallback = CaseFieldList n t variants (ZipList fallback)
-   variant cases fields = Variant cases (ZipList fields)
+   caseFieldList n t (variant :| variants) fallback = CaseFieldList n t variant (ZipList variants) (ZipList fallback)
+   variant (case1 :| cases) fields = Variant case1 (ZipList cases) (ZipList fields)
 
    forStatement = For
    withStatement = With
@@ -238,7 +238,7 @@ instance ISO.Abstract.Modula2 Language where
 
    -- Declaration
    emptyVariant = EmptyVariant
-   addressedVariableDeclaration = AddressedVariableDeclaration
+   addressedVariableDeclaration (var :| vars) = AddressedVariableDeclaration var (ZipList vars)
    forwardProcedureDeclaration = ForwardProcedureDeclaration
    exceptionHandlingBlock = ExceptionHandlingBlock . ZipList
    addressedIdent = AddressedIdent
@@ -264,7 +264,9 @@ data Declaration (full :: Bool) λ l (f' :: * -> *) (f :: * -> *) where
    TypeDeclaration :: Abstract.IdentDef l -> f (Abstract.Type l l f' f') -> Declaration x λ l f' f
    OpaqueTypeDeclaration :: Abstract.IdentDef l -> Declaration False λ l f' f
    VariableDeclaration :: Abstract.IdentList l -> f (Abstract.Type l l f' f') -> Declaration x λ l f' f
-   AddressedVariableDeclaration :: NonEmpty (f (ISO.Abstract.AddressedIdent l l f' f')) -> f (Abstract.Type l l f' f')
+   AddressedVariableDeclaration :: f (ISO.Abstract.AddressedIdent l l f' f')
+                                -> ZipList (f (ISO.Abstract.AddressedIdent l l f' f'))
+                                -> f (Abstract.Type l l f' f')
                                 -> Declaration True λ l f' f
    ProcedureDeclaration :: f (Abstract.ProcedureHeading l l f' f') -> f (Abstract.Block l l f' f')
                         -> Declaration True λ l f' f
@@ -349,7 +351,8 @@ deriving instance (Eq (f (Abstract.Expression l l f' f'))) => Eq (Item λ l f' f
 
 
 data Variant λ l f' f =
-   Variant (NonEmpty (f (Abstract.CaseLabels l l f' f'))) (ZipList (f (Abstract.FieldList l l f' f')))
+   Variant (f (Abstract.CaseLabels l l f' f')) (ZipList (f (Abstract.CaseLabels l l f' f')))
+           (ZipList (f (Abstract.FieldList l l f' f')))
    | EmptyVariant
 
 deriving instance (Typeable λ, Typeable l, Typeable f, Typeable f', Data (f (Abstract.CaseLabels l l f' f')),

@@ -18,9 +18,11 @@ import Text.Grampa (failureDescription)
 
 import qualified Transformation.Rank2 as Rank2
 
-import Language.Modula2 (parseModule, Placed, Version(..))
+import Language.Modula2 (parseModule, parseAndSimplifyModule, Placed, Version(..))
 import Language.Modula2.AST (Language, Module)
 import qualified Language.Modula2.ISO.AST as ISO (Language)
+import qualified Language.Modula2.ConstantFolder -- brings in HasField instances
+import qualified Language.Modula2.ISO.ConstantFolder -- brings in HasField instances
 
 import Prelude hiding (readFile)
 
@@ -109,8 +111,8 @@ prettyFile path src
           | otherwise -> error (unpack $ failureDescription src err1 4 <> failureDescription src err2 4)
          Right [tree] -> return (renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
          Right trees -> error (show (length trees) ++ " ambiguous parses.")
-   where parsedModule1 = parseModule Report src
-         parsedModule2 = parseModule ISO src
+   where parsedModule1 = parseAndSimplifyModule Report src
+         parsedModule2 = parseAndSimplifyModule ISO src
 
 instance Pretty (Module Language Language Placed Placed) where
    pretty m = pretty ((Identity . snd) Rank2.<$> m)

@@ -148,9 +148,9 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (A
           Pretty (Abstract.Value l l Identity Identity),
           Pretty (Abstract.FieldList l l Identity Identity), Pretty (Abstract.Variant l l Identity Identity)) =>
          Pretty (FieldList Language l Identity Identity) where
-   pretty (CaseFieldList localName name variants fallback) =
+   pretty (CaseFieldList localName name variant variants fallback) =
      vsep (["CASE" <+> maybe id ((<+>) . (<+> ":") . pretty) localName (pretty name) <+> "OF"]
-           <> punctuate' "| " (pretty <$> toList variants)
+           <> punctuate' "| " (pretty <$> (variant : getZipList variants))
            <> (if null fallback then []
                else ["ELSE" <#>
                      indent 3 (vsep $ punctuate semi $ pretty . runIdentity <$> getZipList fallback)])
@@ -159,8 +159,8 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (A
 
 instance (Pretty (Abstract.CaseLabels l l Identity Identity), Pretty (Abstract.FieldList l l Identity Identity)) =>
          Pretty (Variant λ l Identity Identity) where
-  pretty (Variant labels fields) = vsep [hsep (punctuate comma $ pretty <$> toList labels) <> ":",
-                                         indent 3 (vsep $ punctuate semi $ pretty <$> getZipList fields)]
+  pretty (Variant label labels fields) = vsep [hsep (punctuate comma $ pretty <$> (label : getZipList labels)) <> ":",
+                                               indent 3 (vsep $ punctuate semi $ pretty <$> getZipList fields)]
 
 instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Identity Identity),
           Pretty (Abstract.Type l l Identity Identity)) =>
