@@ -5,15 +5,20 @@ module Main where
 import Language.Modula2 (Placed, Version(Report, ISO), SomeVersion(SomeVersion), parseModule, parseAndCheckModule,
                          resolvePosition, resolvePositions)
 import Language.Modula2.AST (Language, Module(..), StatementSequence, Statement, Expression)
+import Language.Modula2.ConstantFolder (ConstantFold)
+import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.AST as AST
 import qualified Language.Modula2.Grammar as Grammar
+import qualified Language.Modula2.ConstantFolder -- brings in HasField instances
 import qualified Language.Modula2.ISO.AST as ISO.AST
 import qualified Language.Modula2.ISO.Grammar as ISO.Grammar
-import qualified Language.Modula2.ConstantFolder -- brings in HasField instances
+import qualified Language.Modula2.ISO.ConstantFolder -- brings in HasField instances
 
 import qualified Rank2 as Rank2 (Product(Pair), snd)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Deep as Deep
+import qualified Transformation.Full as Full
+import Transformation.AG.Generics (Auto)
 
 import Data.Text.Prettyprint.Doc (Pretty(pretty))
 import Data.Text.Prettyprint.Doc.Util (putDocW)
@@ -92,14 +97,16 @@ main' Opts{..} =
    of SomeVersion Report -> process Report
       SomeVersion ISO -> process ISO
   where
-     process :: Version l -> IO ()
+     process :: (Abstract.Modula2 l, Abstract.Nameable l,
+                 Full.Functor (Auto ConstantFold) (Abstract.Expression l l)) => Version l -> IO ()
      process version =
          case optsFile of
              Just file -> (if file == "-" then getContents else readFile file)
                           >>= case optsMode
-                              of CheckedModuleMode
-                                    | Report <- version -> \contents-> report contents (parseAndCheckModule Report contents)
---                                    | ISO <- version -> \contents-> report contents (parseAndCheckModule ISO contents)
+                              of CheckedModuleMode ->
+                                    \contents-> case version
+                                                of Report -> report contents (parseAndCheckModule Report contents)
+                                                   ISO -> report contents (parseAndCheckModule ISO contents)
                                  ModuleMode
                                     | Report <- version -> go Report Grammar.compilationUnit file
                                     | ISO <- version -> go ISO Grammar.compilationUnit file

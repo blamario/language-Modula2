@@ -23,7 +23,7 @@ library
                        Language.Modula2.Abstract, Language.Modula2.AST,
                        Language.Modula2.Grammar, Language.Modula2.Pretty, Language.Modula2.ConstantFolder,
                        Language.Modula2.ISO.Abstract, Language.Modula2.ISO.AST,
-                       Language.Modula2.ISO.Grammar, Language.Modula2.ISO.Pretty
+                       Language.Modula2.ISO.Grammar, Language.Modula2.ISO.Pretty, Language.Modula2.ISO.ConstantFolder
   -- other-modules:
   -- other-extensions:
   build-depends:       base >= 4.7 && < 5, text < 1.3, containers >= 0.5 && < 1.0, filepath < 1.5, directory < 1.4,

@@ -4,12 +4,12 @@ module Language.Modula2 (parseModule, parseAndCheckModule, resolvePosition, reso
                          Placed, Version(..), SomeVersion(..)) where
 
 import qualified Language.Modula2.Abstract as Abstract
-import Language.Modula2.AST (Import(Import), Module(..))
-import qualified Language.Modula2.AST as Report (Language, Expression)
+import qualified Language.Modula2.AST as Report (Language)
 import qualified Language.Modula2.ISO.AST as ISO (Language)
 import qualified Language.Modula2.Grammar as Grammar
 import qualified Language.Modula2.ISO.Grammar as ISO.Grammar
 import qualified Language.Modula2.ConstantFolder as ConstantFolder
+import qualified Language.Modula2.ISO.ConstantFolder as ISO.ConstantFolder
 import Language.Modula2.ConstantFolder (Sem, ConstantFold, InhCF, SynCFExp, SynCFMod')
 import Language.Modula2.Pretty ()
 import Language.Modula2.ISO.Pretty ()
@@ -62,40 +62,30 @@ resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
 resolvePosition src = \((pos, ws), a)-> ((Position.offset src pos, ws), a)
 
 -- | Parse and check the given text of a single module.
-parseAndCheckModule :: forall l.
-                       (Abstract.Modula2 l, Abstract.Nameable l,
-                        Ord (Abstract.QualIdent l), Show (Abstract.QualIdent l),
-                        Atts (Inherited (Auto ConstantFold)) (Abstract.Block l l Sem Sem) ~ InhCF l,
-                        Atts (Inherited (Auto ConstantFold)) (Abstract.Definition l l Sem Sem) ~ InhCF l,
-                        Atts (Inherited (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ InhCF l,
-                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Block l l Sem Sem)
-                        ~ SynCFMod' l (Abstract.Block l l),
-                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Block l l Placed Placed)
-                        ~ SynCFMod' l (Abstract.Block l l),
-                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Definition l l Placed Placed)
-                        ~ SynCFMod' l (Abstract.Definition l l),
-                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Definition l l Sem Sem)
-                        ~ SynCFMod' l (Abstract.Definition l l),
-                        Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
-                         Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Placed Placed) ~ SynCFExp l l,
-                        Full.Functor (Auto ConstantFold) (Abstract.Block l l),
-                        Full.Functor (Auto ConstantFold) (Abstract.Definition l l),
+parseAndCheckModule :: (Abstract.Modula2 l, Abstract.Nameable l,
                         Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
-                    => Version l -> Text -> ParseResults Text [Module l l Placed Placed]
-parseAndCheckModule version source =
-   (ConstantFolder.foldConstants (predefined $ SomeVersion version) <$>) <$> parseModule version source
-   where predefined :: SomeVersion -> ConstantFolder.Environment l
-         predefined (SomeVersion Report) = Map.fromList $ map (first Abstract.nonQualIdent) $
-            [("TRUE", Just Abstract.true),
-             ("FALSE", Just Abstract.false)]
-            ++ map builtin ["BITSET", "BOOLEAN", "CARDINAL", "CHAR", "INTEGER", "PROC", "REAL",
-                            "ABS", "CAP", "CHR", "FLOAT", "HIGH", "MAX", "MIN",
-                            "ODD", "ORD", "TRUNC", "VAL"]
-            where builtin name = (name, Just $ Abstract.builtin name)
-         predefined (SomeVersion ISO) = predefined (SomeVersion Report)
+                    => Version l -> Text -> ParseResults Text [Abstract.Module l l Placed Placed]
+parseAndCheckModule Report source =
+   (ConstantFolder.foldConstants (predefined Report) <$>) <$> parseModule Report source
+parseAndCheckModule ISO source =
+   (ISO.ConstantFolder.foldConstants (predefined ISO) <$>) <$> parseModule ISO source
+
+predefined :: (Abstract.Modula2 l, Ord (Abstract.QualIdent l)) => Version l -> ConstantFolder.Environment l
+predefined Report = Map.fromList $ map (first Abstract.nonQualIdent) $
+   [("TRUE", Just Abstract.true),
+    ("FALSE", Just Abstract.false)]
+   ++ map builtin ["BITSET", "BOOLEAN", "CARDINAL", "CHAR", "INTEGER", "PROC", "REAL",
+                   "ABS", "CAP", "CHR", "FLOAT", "HIGH", "MAX", "MIN", "ODD", "ORD", "TRUNC", "VAL"]
+   where builtin name = (name, Just $ Abstract.builtin name)
+predefined ISO = Map.fromList $ map (first Abstract.nonQualIdent) $
+   [("TRUE", Just Abstract.true),
+    ("FALSE", Just Abstract.false)]
+   ++ map builtin ["BITSET", "BOOLEAN", "CARDINAL", "CHAR", "INTEGER", "PROC", "REAL",
+                   "ABS", "CAP", "CHR", "FLOAT", "HIGH", "MAX", "MIN", "ODD", "ORD", "TRUNC", "VAL"]
+   where builtin name = (name, Just $ Abstract.builtin name)
 
 -- | Parse the given text of a single module.
-parseModule :: Version l -> Text -> ParseResults Text [Module l l Placed Placed]
+parseModule :: Version l -> Text -> ParseResults Text [Abstract.Module l l Placed Placed]
 parseModule Report source = resolve source (parseComplete Grammar.modula2grammar source)
 parseModule ISO source = resolve source (Rank2.snd $ parseComplete ISO.Grammar.modula2ISOgrammar source)
 
