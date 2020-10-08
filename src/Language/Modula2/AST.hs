@@ -174,7 +174,7 @@ instance Abstract.CoWirthy Language where
    coExpression (FunctionCall function parameters) = Just (Abstract.functionCall function $ getZipList parameters)
    coExpression (Not e) = Just (Abstract.not e)
 
-   coValue :: forall l l' f f'. (Abstract.Wirthy (l :: *), Traversable f, Traversable f') =>
+   coValue :: forall l l' f f'. Abstract.Wirthy (l :: *) =>
               Abstract.Value Language l' f' f  -> Maybe (Abstract.Value l l' f' f)
    coValue v = Abstract.coValue (coerce v :: Abstract.Value Oberon.Language l'' f' f)
 

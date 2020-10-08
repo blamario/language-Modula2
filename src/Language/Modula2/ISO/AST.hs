@@ -177,11 +177,11 @@ instance Abstract.CoWirthy Language where
    coExpression Record{} = Nothing
    coExpression Set{} = Nothing
 
-   coValue :: forall l l' f f'. (Abstract.Wirthy (l :: *), Traversable f, Traversable f') =>
+   coValue :: forall l l' f f'. Abstract.Wirthy (l :: *) =>
               Abstract.Value Language l' f' f  -> Maybe (Abstract.Value l l' f' f)
    coValue v = Abstract.coValue (coerce v :: Abstract.Value Report.Language l'' f' f)
 
-   coDesignator :: forall l l' f' f. (Abstract.Wirthy l, Traversable f', Traversable f)
+   coDesignator :: forall l l' f' f. Abstract.Wirthy l
                 => Abstract.Designator Language l' f' f -> Maybe (Abstract.Designator l l' f' f)
    coDesignator d = Abstract.coDesignator (coerce d :: Designator Report.Language l' f' f)
 
