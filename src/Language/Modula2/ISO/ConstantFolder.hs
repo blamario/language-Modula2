@@ -201,17 +201,19 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
    synthesis t (pos, self) (InhCF environment currMod) synthesized =
       fromReport (synthesis t (pos, toReport self) (InhCF (coerce <$> Map.mapKeysMonotonic coerce environment) currMod)
                   $ toReport synthesized)
-      where fromJust :: Maybe x -> x
-            fromJust Nothing = error ("Modula-2 expression cannot be converted from ISO to Report at " ++ show pos)
-            fromJust (Just e) = e
+      where fromJust :: forall f a (b :: * -> *) (c :: * -> *). Oberon.Abstract.Maybe3 f a b c -> f a b c
+            fromJust (Oberon.Abstract.Maybe3 Nothing) =
+               error ("Modula-2 expression cannot be converted from ISO to Report at " ++ show pos)
+            fromJust (Oberon.Abstract.Maybe3 (Just e)) = e
             fromReport :: SynCFExp Report.Language l -> SynCFExp AST.Language l
             fromReport SynCFExp{folded= Mapped (pos', reportExpression),
                                 foldedValue= reportValue} =
-               SynCFExp{folded= Mapped (pos', fromJust $ coExpression reportExpression),
+               SynCFExp{folded= Mapped (pos', fromJust (coExpression @Report.Language
+                                                        @(Abstract.WirthySubsetOf AST.Language) reportExpression)),
                         foldedValue= reportValue}
             toReport :: Abstract.Expression AST.Language l f1 f2
                      -> Report.Expression Report.Language l f1 f2
-            toReport s = fromJust (coExpression @AST.Language s)
+            toReport s = fromJust (coExpression @AST.Language @(Abstract.WirthySubsetOf Report.Language) s)
 
 -- * More boring Transformation.Functor instances, TH candidates
 instance Ord (Abstract.QualIdent l) => Transformation.At (Auto ConstantFold) (Modules l Sem Sem) where

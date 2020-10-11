@@ -1,10 +1,12 @@
-{-# LANGUAGE DeriveDataTypeable, KindSignatures, PolyKinds, TypeFamilies, TypeFamilyDependencies #-}
+{-# LANGUAGE DeriveDataTypeable, KindSignatures, PolyKinds, ScopedTypeVariables,
+             TypeApplications, TypeFamilies, TypeFamilyDependencies, UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
 -- | Modula-2 Finally Tagless Abstract Syntax Tree definitions
 
 module Language.Modula2.Abstract (Ident, IdentList, BaseType, ConstExpression, Priority,
-                                  Wirthy(..), CoWirthy(..), Nameable(..), Modula2(..), RelOp(..)) where
+                                  Wirthy(..), CoWirthy(..), Nameable(..), Modula2(..),
+                                  RelOp(..), WirthySubsetOf(..), Maybe3(..)) where
 
 import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
@@ -59,3 +61,44 @@ class Wirthy l => Modula2 l where
    -- Expression
    set :: Maybe (QualIdent l') -> [f (Element l' l' f' f')] -> Expression l l' f' f
    qualIdent :: [Ident] -> Ident -> QualIdent l
+
+nothing3 = Maybe3 Nothing
+
+instance Wirthy l => Modula2 (WirthySubsetOf l) where
+   type Export (WirthySubsetOf l) = Maybe (Export l)
+   type Definition (WirthySubsetOf l) = Maybe3 (Definition l)
+   type Variant (WirthySubsetOf l) = Maybe3 (Variant l)
+   definitionModule = const $ const $ const $ const nothing3
+   implementationModule = const $ const $ const $ const nothing3
+   programModule = const $ const $ const $ const nothing3
+
+   moduleExport = const $ const Nothing
+   moduleImport = const $ const Nothing
+
+   -- Definition
+   constantDefinition = const $ const nothing3
+   typeDefinition = const $ const nothing3
+   variableDefinition = const $ const nothing3
+   procedureDefinition = const nothing3
+
+   -- Declaration
+   moduleDeclaration = const $ const $ const $ const $ const nothing3
+
+   procedureHeading = const $ const nothing3
+   caseFieldList = const $ const $ const $ const nothing3
+   variant = const $ const nothing3
+
+   -- Type
+   enumeration = const nothing3
+   subRange = const $ const $ const nothing3
+   arrayType = const $ const nothing3
+   setType = const nothing3
+   recordType = const nothing3
+
+   -- Statement
+   withStatement = const $ const nothing3
+   forStatement = const $ const $ const $ const $ const nothing3
+
+   -- Expression
+   set = const $ const nothing3
+   qualIdent = const $ const Nothing

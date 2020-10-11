@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, KindSignatures, PolyKinds, TypeFamilies, TypeFamilyDependencies #-}
+{-# LANGUAGE DeriveDataTypeable, KindSignatures, PolyKinds,
+             TypeFamilies, TypeFamilyDependencies, UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
 -- | Modula-2 Finally Tagless Abstract Syntax Tree definitions
@@ -43,3 +44,31 @@ class Report.Modula2 l => Modula2 l where
    -- Compound expression
    single :: f (Expression l' l' f' f') -> Item l l' f' f
    repeated :: f (Expression l' l' f' f') -> f (ConstExpression l' l' f' f') -> Item l l' f' f
+
+just3 = Maybe3 . Just
+nothing3 = Maybe3 Nothing
+
+instance Wirthy l => Modula2 (WirthySubsetOf l) where
+   type AddressedIdent (WirthySubsetOf l) = Maybe3 (AddressedIdent l)
+   type Item (WirthySubsetOf l) = Maybe3 (Item l)
+   emptyVariant = nothing3
+   addressedVariableDeclaration = const $ const nothing3
+   forwardProcedureDeclaration = const nothing3
+   exceptionHandlingBlock = const $ const $ const $ const nothing3
+   addressedIdent = const $ const nothing3
+   unaddressedIdent = const nothing3
+
+   -- Type
+   packedSetType = const nothing3
+
+   -- Statement
+   retryStatement = nothing3
+
+    -- Expression
+   array = const $ const nothing3
+   record = const $ const nothing3
+   remainder = const $ const nothing3
+
+   -- Compound expression
+   single = const nothing3
+   repeated = const $ const nothing3
