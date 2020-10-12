@@ -6,7 +6,7 @@
 
 module Language.Modula2.Abstract (Ident, IdentList, BaseType, ConstExpression, Priority,
                                   Wirthy(..), CoWirthy(..), Nameable(..), Modula2(..),
-                                  RelOp(..), WirthySubsetOf(..), Maybe3(..)) where
+                                  RelOp(..), WirthySubsetOf(..), Maybe3(..), just3, maybe3, nothing3) where
 
 import Data.Data (Data, Typeable)
 import Data.List.NonEmpty
@@ -61,8 +61,6 @@ class Wirthy l => Modula2 l where
    -- Expression
    set :: Maybe (QualIdent l') -> [f (Element l' l' f' f')] -> Expression l l' f' f
    qualIdent :: [Ident] -> Ident -> QualIdent l
-
-nothing3 = Maybe3 Nothing
 
 instance Wirthy l => Modula2 (WirthySubsetOf l) where
    type Export (WirthySubsetOf l) = Maybe (Export l)

@@ -93,8 +93,8 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
        foldMap pretty export,
        pretty body,
        "END" <+> pretty name <> semi]
-   pretty declaration = foldMap3 pretty (Abstract.coDeclaration
-                                         @Language @(Abstract.WirthySubsetOf Oberon.Language) declaration)
+   pretty declaration = Abstract.maybe3 mempty pretty (Abstract.coDeclaration
+                                                       @Language @(Abstract.WirthySubsetOf Oberon.Language) declaration)
 
 instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Value l l Identity Identity),
@@ -114,16 +114,16 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
    pretty (Precedence _ (Set ty elements)) =
       foldMap pretty ty <+> braces (hsep $ punctuate comma $ pretty <$> getZipList elements)
    pretty (Precedence p e) =
-      foldMap3 (pretty . Precedence p) (Abstract.coExpression @Language @(Abstract.WirthySubsetOf Oberon.Language) e)
+      Abstract.maybe3 mempty (pretty . Precedence p) (Abstract.coExpression @Language @(Abstract.WirthySubsetOf Oberon.Language) e)
 
 instance {-# OVERLAPS #-} Pretty (Abstract.Value l l Identity Identity) =>
          Pretty (Value Language l Identity Identity) where
    pretty (CharCode c) = pretty (showOct c "") <> "C"
-   pretty v = foldMap3 pretty (Abstract.coValue @Language @(Abstract.WirthySubsetOf Oberon.Language) v)
+   pretty v = Abstract.maybe3 mempty pretty (Abstract.coValue @Language @(Abstract.WirthySubsetOf Oberon.Language) v)
 
 instance (Pretty (Abstract.QualIdent l), Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.Expression l l Identity Identity)) => Pretty (Designator Language l Identity Identity) where
-   pretty d = foldMap3 pretty (Abstract.coDesignator @Language @(Abstract.WirthySubsetOf Oberon.Language) d)
+   pretty d = Abstract.maybe3 mempty pretty (Abstract.coDesignator @Language @(Abstract.WirthySubsetOf Oberon.Language) d)
 
 instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Identity Identity),
           Pretty (Abstract.FieldList l l Identity Identity),
@@ -139,7 +139,7 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
                                        "END"]
    pretty (ProcedureType parameters) = "PROCEDURE" <+> adjust (pretty parameters)
       where adjust = pretty . Text.replace " : " "" . Text.replace ";" "," . renderStrict . layoutCompact
-   pretty ty = foldMap3 pretty (Abstract.coType @Language @(Abstract.WirthySubsetOf Oberon.Language) ty)
+   pretty ty = Abstract.maybe3 mempty pretty (Abstract.coType @Language @(Abstract.WirthySubsetOf Oberon.Language) ty)
 
 instance Pretty (QualIdent l) where
    pretty (QualIdent modulePath name) = mconcat (punctuate dot $ pretty <$> (modulePath <> [name]))
@@ -186,7 +186,7 @@ instance (Pretty (Abstract.ConstExpression l l Identity Identity),
    pretty (With designator body) = vsep ["WITH" <+> pretty designator <+> "DO",
                                          prettyBody body,
                                          "END"]
-   pretty stat = foldMap3 pretty (Abstract.coStatement @Language @(Abstract.WirthySubsetOf Oberon.Language) stat)
+   pretty stat = Abstract.maybe3 mempty pretty (Abstract.coStatement @Language @(Abstract.WirthySubsetOf Oberon.Language) stat)
 
 instance Language.Oberon.Abstract.Oberon Language where
    type WithAlternative Language = Language.Oberon.AST.WithAlternative Language
@@ -196,10 +196,6 @@ instance Language.Oberon.Abstract.Oberon Language where
 prettyBody :: Pretty (Abstract.StatementSequence l l Identity Identity) =>
               Identity (Abstract.StatementSequence l l Identity Identity) -> Doc ann
 prettyBody (Identity statements) = indent 3 (pretty statements)
-
-foldMap3 :: (f a (b :: * -> *) (c :: * -> *) -> m) -> Abstract.Maybe3 f a b c -> m
-foldMap3 f (Abstract.Maybe3 (Just x)) = f x
-foldMap3 _ (Abstract.Maybe3 Nothing) = error "Failed to convert a construct to Oberon"
 
 punctuate' :: Doc ann -> [Doc ann] -> [Doc ann]
 punctuate' p [] = []

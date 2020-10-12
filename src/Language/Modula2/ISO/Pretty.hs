@@ -60,7 +60,7 @@ instance (Abstract.Nameable l, Pretty (Abstract.IdentDef l),
        foldMap pretty export,
        pretty body,
        "END" <+> pretty name <> semi]
-   pretty dec = foldMap3 pretty (Abstract.coDeclaration @Language @(Abstract.WirthySubsetOf Report.Language) dec)
+   pretty dec = Abstract.maybe3 mempty pretty (Abstract.coDeclaration @Language @(Abstract.WirthySubsetOf Report.Language) dec)
 
 instance Pretty (Abstract.ConstExpression l l Identity Identity) => Pretty (AddressedIdent l l Identity Identity) where
    pretty (AddressedIdent name address) = pretty name <> brackets (pretty address)
@@ -81,7 +81,7 @@ instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.FormalParameters l l Id
                                        "END"]
    pretty (ProcedureType parameters) = "PROCEDURE" <+> adjust (pretty parameters)
       where adjust = pretty . Text.replace " : " "" . Text.replace ";" "," . renderStrict . layoutCompact
-   pretty ty = foldMap3 pretty (Abstract.coType @Language @(Abstract.WirthySubsetOf Report.Language) ty)
+   pretty ty = Abstract.maybe3 mempty pretty (Abstract.coType @Language @(Abstract.WirthySubsetOf Report.Language) ty)
 
 instance (Pretty (Abstract.IdentDef l), Pretty (Abstract.QualIdent l), Pretty (Abstract.Type l l Identity Identity),
           Pretty (Abstract.Value l l Identity Identity),
@@ -124,7 +124,7 @@ instance (Pretty (Abstract.ConstExpression l l Identity Identity),
                                          prettyBody body,
                                          "END"]
    pretty RetryStatement = "RETRY"
-   pretty stat = foldMap3 pretty (Abstract.coStatement @Language @(Abstract.WirthySubsetOf Report.Language) stat)
+   pretty stat = Abstract.maybe3 mempty pretty (Abstract.coStatement @Language @(Abstract.WirthySubsetOf Report.Language) stat)
 
 instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.Expression l l Identity Identity),
@@ -137,7 +137,7 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
 
 instance {-# OVERLAPS #-} Pretty (Abstract.Value l l Identity Identity) =>
          Pretty (Report.Value Language l Identity Identity) where
-   pretty v = foldMap3 pretty (Abstract.coValue @Language @(Abstract.WirthySubsetOf Report.Language) v)
+   pretty v = Abstract.maybe3 mempty pretty (Abstract.coValue @Language @(Abstract.WirthySubsetOf Report.Language) v)
 
 instance (Pretty (Abstract.Expression l l Identity Identity)) => Pretty (Item Language l Identity Identity) where
    pretty (Single e) = pretty e
@@ -161,19 +161,15 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
    pretty (Precedence _ (Set setType elements)) =
       foldMap pretty setType <+> braces (hsep $ punctuate comma $ pretty <$> getZipList elements)
    pretty (Precedence p e) =
-      foldMap3 (pretty . Precedence p) (Abstract.coExpression @Language @(Abstract.WirthySubsetOf Report.Language) e)
+      Abstract.maybe3 mempty (pretty . Precedence p) (Abstract.coExpression @Language @(Abstract.WirthySubsetOf Report.Language) e)
 
 instance (Pretty (Abstract.QualIdent l), Pretty (Abstract.Designator l l Identity Identity),
           Pretty (Abstract.Expression l l Identity Identity)) =>
          Pretty (Report.Designator Language l Identity Identity) where
-   pretty d = foldMap3 pretty (Abstract.coDesignator @Language @(Abstract.WirthySubsetOf Report.Language) d)
+   pretty d = Abstract.maybe3 mempty pretty (Abstract.coDesignator @Language @(Abstract.WirthySubsetOf Report.Language) d)
 
 -- not used at run-time
 instance Language.Oberon.Abstract.Oberon Language where
    type WithAlternative Language = Language.Oberon.AST.WithAlternative Language
 
 prettyBody (Identity statements) = indent 3 (pretty statements)
-
-foldMap3 :: (f a (b :: * -> *) (c :: * -> *) -> m) -> Abstract.Maybe3 f a b c -> m
-foldMap3 f (Abstract.Maybe3 (Just x)) = f x
-foldMap3 _ (Abstract.Maybe3 Nothing) = error "Failed to convert a construct to Oberon"

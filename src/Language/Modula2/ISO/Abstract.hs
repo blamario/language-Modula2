@@ -45,9 +45,6 @@ class Report.Modula2 l => Modula2 l where
    single :: f (Expression l' l' f' f') -> Item l l' f' f
    repeated :: f (Expression l' l' f' f') -> f (ConstExpression l' l' f' f') -> Item l l' f' f
 
-just3 = Maybe3 . Just
-nothing3 = Maybe3 Nothing
-
 instance Wirthy l => Modula2 (WirthySubsetOf l) where
    type AddressedIdent (WirthySubsetOf l) = Maybe3 (AddressedIdent l)
    type Item (WirthySubsetOf l) = Maybe3 (Item l)
