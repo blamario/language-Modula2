@@ -141,8 +141,7 @@ instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord
         (AST.DefinitionModule{}, AST.DefinitionModule _ _ _ definitions) -> foldMap (moduleEnv . syn) definitions
         _ -> mempty
 
-instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord k,
-          v ~ Abstract.Value l l Placed Placed,
+instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord k, v ~ Abstract.Value l l Placed Placed,
           Abstract.Export l ~ AST.Export l, Abstract.Value l ~ AST.Value l,
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Declaration l l Sem Sem)
           ~ SynCFMod' l (Abstract.Declaration l l),

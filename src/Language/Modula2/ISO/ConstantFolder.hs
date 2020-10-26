@@ -48,7 +48,7 @@ import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Sem, Environm
                                        InhCF(..), InhCFRoot(..), SynCF(..), SynCF',
                                        SynCFRoot(..), SynCFMod(..), SynCFMod', SynCFExp(..),
                                        folded', foldedExp, foldedExp')
-import Language.Modula2.ConstantFolder (SynCFDesignator(..), SynCFMod',
+import Language.Modula2.ConstantFolder (SynCFDesignator(..),
                                         foldBinaryArithmetic, foldBinaryBoolean,
                                         foldBinaryFractional, foldBinaryInteger,
                                         maxCardinal, maxInteger, minInteger, maxInt32, minInt32, maxSet, minSet,
@@ -132,6 +132,20 @@ instance Ord (Abstract.QualIdent l) => Attribution (Auto ConstantFold) (Modules 
            foldedModule :: SynCFMod' l (AST.Module l l) -> Mapped Placed (AST.Module l l Placed Placed)
            foldedModule = folded
 
+instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
+          Atts (Synthesized (Auto ConstantFold)) (Abstract.Declaration l l Sem Sem) ~ SynCFMod' l (Abstract.Declaration l l),
+          Atts (Inherited (Auto ConstantFold)) (Abstract.StatementSequence l l Sem Sem) ~ InhCF l,
+          Atts (Inherited (Auto ConstantFold)) (Abstract.Declaration l l Sem Sem) ~ InhCF l) =>
+         Bequether (Auto ConstantFold) (AST.Block l l) Sem Placed where
+   bequest _ (pos, AST.Block _decls _stats) inheritance (AST.Block decls stats) =
+      AST.Block (pure $ Inherited localEnv) (pure $ Inherited localEnv)
+      where newEnv = Map.unions (moduleEnv . syn <$> decls)
+            localEnv = InhCF (newEnv `Map.union` env inheritance) (currentModule inheritance)
+   bequest _ (pos, AST.ExceptionHandlingBlock{}) inheritance (AST.ExceptionHandlingBlock decls _stats _catch _always) =
+      AST.ExceptionHandlingBlock (pure $ Inherited localEnv) (pure $ Inherited localEnv) (pure $ Inherited localEnv) (pure $ Inherited localEnv)
+      where newEnv = Map.unions (moduleEnv . syn <$> decls)
+            localEnv = InhCF (newEnv `Map.union` env inheritance) (currentModule inheritance)
+
 instance (Abstract.Nameable l, k ~ Abstract.QualIdent l, v ~ Abstract.Value l l Placed Placed, Ord k,
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Declaration l l Sem Sem)
           ~ SynCFMod' l (Abstract.Declaration l l)) =>
@@ -140,15 +154,8 @@ instance (Abstract.Nameable l, k ~ Abstract.QualIdent l, v ~ Abstract.Value l l 
    synthesizedField _ _ (pos, AST.ExceptionHandlingBlock{}) _ (AST.ExceptionHandlingBlock decls _stats _catch _always) =
       Map.unions (moduleEnv . syn <$> decls)
 
-instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord k,
-          v ~ Abstract.Value l l Placed Placed,
+instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord k, v ~ Abstract.Value l l Placed Placed,
           Abstract.Export l ~ AST.Export l, Abstract.Value l ~ AST.Value l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.Declaration l l Sem Sem) ~ InhCF l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.Type l l Sem Sem) ~ InhCF l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.Block l l Sem Sem) ~ InhCF l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.ProcedureHeading l l Sem Sem) ~ InhCF l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.FormalParameters l l Sem Sem) ~ InhCF l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.ConstExpression l l Sem Sem) ~ InhCF l,
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Declaration l l Sem Sem)
           ~ SynCFMod' l (Abstract.Declaration l l),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Type l l Sem Sem) ~ SynCF' (Abstract.Type l l),
@@ -179,9 +186,6 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
           Coercible (Abstract.QualIdent Report.Language) (AST.QualIdent l),
           Coercible (Abstract.Value Report.Language Report.Language) (AST.Value l l),
           InhCF l ~ InhCF λ,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ InhCF l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.Element l l Sem Sem) ~ InhCF l,
-          Atts (Inherited (Auto ConstantFold)) (Abstract.Designator l l Sem Sem) ~ InhCF l,
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Element l l Sem Sem) ~ SynCF' (Abstract.Element l l),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Item l l Sem Sem) ~ SynCF' (Abstract.Item l l),
