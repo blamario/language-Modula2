@@ -44,7 +44,7 @@ import Language.Oberon.Abstract (coExpression, coValue)
 import qualified Language.Oberon.Abstract as Oberon.Abstract
 import qualified Language.Oberon.AST as Oberon.AST
 import qualified Language.Oberon.ConstantFolder as Oberon.ConstantFolder
-import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Sem, Environment,
+import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Placed, Sem, Environment,
                                        InhCF(..), InhCFRoot(..), SynCF(..), SynCF',
                                        SynCFRoot(..), SynCFMod(..), SynCFMod', SynCFExp(..),
                                        folded', foldedExp, foldedExp')
@@ -77,7 +77,7 @@ foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
               => Environment l -> AST.Module l l Placed Placed -> AST.Module l l Placed Placed
 foldConstants predef aModule =
    snd $ getMapped
-   $ folded (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing []), Auto ConstantFold Deep.<$> aModule)
+   $ folded (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing [], 0), Auto ConstantFold Deep.<$> aModule)
                   `Rank2.apply`
                   Inherited (InhCF predef undefined))
              :: SynCFMod' l (AST.Module l l))
@@ -119,7 +119,7 @@ type instance Atts (Inherited (Auto ConstantFold)) (AST.Statement λ l _ _) = In
 type instance Atts (Inherited (Auto ConstantFold)) (AST.Variant λ l _ _) = InhCF λ
 
 wrap :: a -> Mapped Placed a
-wrap = Mapped . (,) (0, Trailing [])
+wrap = Mapped . (,) (0, Trailing [], 0)
 
 -- * Rules
 
@@ -224,8 +224,6 @@ instance Ord (Abstract.QualIdent l) => Transformation.At (Auto ConstantFold) (Mo
    ($) = AG.applyDefault snd
 
 -- * Unsafe Rank2 AST instances
-
-type Placed = (,) (Int, ParsedLexemes)
 
 $(do l <- varT  <$> newName "l"
      mconcat <$> mapM (\g-> Transformation.Full.TH.deriveUpFunctor (conT ''Auto `appT` conT ''ConstantFold) $ conT g `appT` l `appT` l)
