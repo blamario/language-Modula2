@@ -2,7 +2,7 @@
              TypeFamilies, TypeFamilyDependencies, UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
--- | Modula-2 Finally Tagless Abstract Syntax Tree definitions
+-- | ISO Modula-2 Finally Tagless Abstract Syntax Tree definitions
 
 module Language.Modula2.ISO.Abstract (Modula2(..)) where
 
@@ -13,8 +13,7 @@ import Data.Text (Text)
 import qualified Language.Modula2.Abstract as Report
 import Language.Modula2.Abstract hiding (Modula2)
 
-type Priority l = ConstExpression l
-
+-- | The additional finally-tagless associated types and methods relevant to the ISO Modula-2 language.
 class Report.Modula2 l => Modula2 l where
    type AddressedIdent l = (d :: * -> (* -> *) -> (* -> *) -> *) | d -> l
    type Item l = (i :: * -> (* -> *) -> (* -> *) -> *) | i -> l

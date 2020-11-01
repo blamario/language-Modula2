@@ -3,7 +3,9 @@
              ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
--- | Modula-2 Abstract Syntax Tree definitions
+-- | Concrete data types for Modula-2 constructs that make up its Abstract Syntax Tree. Every data type from this
+-- module is an instance of a type family declared in "Language.Modula2.Abstract". This way it can be replaced by
+-- another data type for another language while leaving other types to be reused.
 
 module Language.Modula2.AST (module Language.Modula2.AST,
                              Abstract.Ident,
@@ -29,6 +31,8 @@ import qualified Language.Modula2.Abstract as Abstract
 import Language.Modula2.Abstract (Ident)
 import qualified Language.Oberon.AST as Oberon
 
+-- | Data type representing the Modula-2 language, as originally specified by ''Report on the Programming Language
+-- Modula-2''.
 data Language = Language deriving (Data, Typeable)
 
 instance Abstract.Wirthy Language where

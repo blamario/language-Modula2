@@ -2,7 +2,7 @@
              TypeApplications, TypeFamilies, TypeFamilyDependencies, UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
--- | Modula-2 Finally Tagless Abstract Syntax Tree definitions
+-- | Finally Tagless Abstract Syntax Tree definitions for the programming language Modula-2
 
 module Language.Modula2.Abstract (Ident, IdentList, BaseType, ConstExpression, Priority,
                                   Wirthy(..), CoWirthy(..), Nameable(..), Modula2(..),
@@ -14,8 +14,10 @@ import Data.Text (Text)
 
 import Language.Oberon.Abstract
 
+-- | Module priority
 type Priority l = ConstExpression l
 
+-- | The finally-tagless associated types and methods relevant to the Modula-2 language.
 class Wirthy l => Modula2 l where
    type Export l = x | x -> l
    type Definition l = (d :: * -> (* -> *) -> (* -> *) -> *) | d -> l
@@ -47,7 +49,8 @@ class Wirthy l => Modula2 l where
 
    -- Type
    enumeration :: IdentList l' -> Type l l' f' f
-   subRange :: Maybe (QualIdent l') -> f (ConstExpression l' l' f' f') -> f (ConstExpression l' l' f' f') -> Type l l' f' f
+   subRange :: Maybe (QualIdent l') -> f (ConstExpression l' l' f' f') -> f (ConstExpression l' l' f' f')
+            -> Type l l' f' f
    arrayType :: [f (Type l' l' f' f')] -> f (Type l' l' f' f') -> Type l l' f' f
    setType :: f (Type l' l' f' f') -> Type l l' f' f
    recordType :: [f (FieldList l' l' f' f')] -> Type l l' f' f

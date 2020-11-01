@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, GADTs, OverloadedStrings, ScopedTypeVariables,
              TypeApplications, TypeFamilies, UndecidableInstances #-}
 
--- | This module exports the instances of the 'Pretty' type class necessary for printing of a Modula-2 abstract syntax
--- tree.
+-- | This module exports the instances of the 'Pretty' type class necessary for printing of an ISO Modula-2 abstract
+-- syntax tree.
 
 module Language.Modula2.ISO.Pretty () where
 

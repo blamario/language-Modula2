@@ -1,5 +1,8 @@
 {-# Language FlexibleContexts, FlexibleInstances, OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables,
              TypeFamilies, TypeSynonymInstances, TemplateHaskell #-}
+
+-- | Modula-2 grammar adapted from ''Report on the Programming Language Modula-2''
+
 module Language.Modula2.Grammar (module Language.Modula2.Grammar, Lexeme(..), ParsedLexemes(..)) where
 
 import Control.Applicative
@@ -24,7 +27,7 @@ import qualified Language.Modula2.AST as AST
 
 type Parser = ParserT ((,) [[Lexeme]])
 
--- | All the productions of the Modula-2 grammar
+-- | The names and types of all the Modula-2 grammar productions
 data Modula2Grammar l f p = Modula2Grammar {
    ident :: p Abstract.Ident,
    number :: p (Abstract.Value l l f f),
@@ -105,7 +108,7 @@ type NodeWrap = (,) (Position, ParsedLexemes, Position)
 modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
 
-{- Adjusted from Report on the Programming Language Modula-2 -}
+-- | All the productions of Modula-2 grammar
 grammar :: forall l g. (Abstract.Modula2 l, LexicalParsing (Parser g Text))
         => GrammarBuilder (Modula2Grammar l NodeWrap) g Parser Text
 grammar g@Modula2Grammar{..} = g{

@@ -2,9 +2,13 @@
              MultiParamTypeClasses, OverloadedStrings, RankNTypes,
              ScopedTypeVariables, TemplateHaskell, TypeFamilies, UndecidableInstances #-}
 
-module Language.Modula2.ConstantFolder (ConstantFold, Sem, Environment,
+-- | The main export of this module is the function 'foldConstants' that folds the constants in a Modula-2 AST using
+-- an attribute grammar. Other exports are helper functions and attribute types that can be reused for other languages
+-- or attribute grammars.
+
+module Language.Modula2.ConstantFolder (foldConstants,
+                                        ConstantFold, Sem, Environment,
                                         InhCF, SynCF(..), SynCFDesignator(..), SynCFExp(..), SynCFMod(..), SynCFMod',
-                                        foldConstants,
                                         foldBinaryArithmetic, foldBinaryBoolean,
                                         foldBinaryFractional, foldBinaryInteger,
                                         maxCardinal, maxInteger, minInteger, maxInt32, minInt32, maxSet, minSet,
@@ -48,6 +52,11 @@ import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Sem, Environm
                                        SynCFRoot(..), SynCFMod(..), SynCFDesignator(..), SynCFMod', SynCFExp(..),
                                        folded', foldedExp, foldedExp')
 
+-- | Fold the constants in the given collection of Modula-2 modules (a 'Map' of modules keyed by module name). It uses
+-- the constant declarations from the modules as well as the given 'Environment' of predefined constants and
+-- functions.
+--
+-- Note that the Modula-2 'AST.Language' satisfies all constraints in the function's type signature.
 foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
                             Ord (Abstract.QualIdent l), Show (Abstract.QualIdent l),
                             Atts (Inherited (Auto ConstantFold)) (Abstract.Block l l Sem Sem) ~ InhCF l,

@@ -2,8 +2,12 @@
              MultiParamTypeClasses, OverloadedStrings, RankNTypes,
              ScopedTypeVariables, TemplateHaskell, TypeApplications, TypeFamilies, UndecidableInstances #-}
 
-module Language.Modula2.ISO.ConstantFolder (InhCF, SynCF(..), SynCFDesignator(..), SynCFExp(..), SynCFMod', Environment,
-                                            foldConstants) where
+-- | The main export of this module is the function 'foldConstants' that folds the constants in an ISO Modula-2 AST
+-- using an attribute grammar. Other exports are helper functions and attribute types that can be reused for other
+-- languages or attribute grammars.
+
+module Language.Modula2.ISO.ConstantFolder (foldConstants, InhCF,
+                                            SynCF(..), SynCFDesignator(..), SynCFExp(..), SynCFMod', Environment) where
 
 import Control.Applicative (liftA2, ZipList(ZipList, getZipList))
 import Control.Arrow (first)
@@ -55,6 +59,11 @@ import Language.Modula2.ConstantFolder (SynCFDesignator(..),
                                         doubleSize, floatSize, intSize, int32Size,
                                         maxReal, minReal)
 
+-- | Fold the constants in the given collection of Modula-2 modules (a 'Map' of modules keyed by module name). It uses
+-- the constant declarations from the modules as well as the given 'Environment' of predefined constants and
+-- functions.
+--
+-- Note that the ISO Modula-2 'AST.Language' satisfies all constraints in the function's type signature.
 foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
                             Ord (Abstract.QualIdent l), Show (Abstract.QualIdent l),
                             Atts (Inherited (Auto ConstantFold)) (Abstract.Block l l Sem Sem) ~ InhCF l,

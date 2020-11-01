@@ -3,7 +3,7 @@
              ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
--- | Modula-2 Abstract Syntax Tree definitions
+-- | ISO Modula-2 Abstract Syntax Tree definitions
 
 module Language.Modula2.ISO.AST where
 
@@ -26,6 +26,7 @@ import Language.Modula2.Abstract (Ident)
 import Language.Modula2.AST hiding (Language, Block(..), Declaration(..), Expression(..), Statement(..),
                                     Type(..), Variant(..))
 
+-- | Data type representing the Modula-2 language, as specified by the ISO standard.
 data Language = Language deriving (Data, Typeable)
 
 instance Abstract.Wirthy Language where

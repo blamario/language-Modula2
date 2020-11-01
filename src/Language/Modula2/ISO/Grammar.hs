@@ -1,5 +1,7 @@
 {-# Language FlexibleContexts, FlexibleInstances, OverloadedStrings, Rank2Types, RecordWildCards, ScopedTypeVariables,
              TypeFamilies, TypeSynonymInstances, TemplateHaskell #-}
+-- | Modula-2 grammar adapted from the ISO specification of the language.
+
 module Language.Modula2.ISO.Grammar where
 
 import Control.Applicative
@@ -27,6 +29,7 @@ import           Language.Modula2.Grammar (delimiter, wrap)
 
 type Parser = ReportGrammar.Parser
 
+-- | The names and types of all the new grammar productions in the ISO specification
 data ISOMixin l f p = ISOMixin{
    machineAddress :: p (f (Abstract.ConstExpression l l f f)),
    packedSetType :: p (Abstract.Type l l f f),
@@ -41,6 +44,7 @@ data ISOMixin l f p = ISOMixin{
    arrayPart :: p (ISO.Abstract.Item l l f f),
    structureComponent  :: p (f (Abstract.Expression l l f f))}
 
+-- | The new grammar productions in the ISO specification
 isoMixin :: (ISO.Abstract.Modula2 l, LexicalParsing (Parser g Text))
          => ReportGrammar.Modula2Grammar l ReportGrammar.NodeWrap (Parser g Text)
          -> ISOMixin l ReportGrammar.NodeWrap (Parser g Text)
@@ -74,7 +78,7 @@ type ISOGrammar l = Rank2.Product (ISOMixin l ReportGrammar.NodeWrap) (ReportGra
 modula2ISOgrammar :: Grammar (ISOGrammar AST.Language) Parser Text
 modula2ISOgrammar = fixGrammar isoGrammar
 
-{- Adjusted from Report on the Programming Language Modula-2 -}
+-- | All the productions of the ISO Modula-2 grammar
 isoGrammar :: forall l g. (ISO.Abstract.Modula2 l, LexicalParsing (Parser g Text))
            => GrammarBuilder (ISOGrammar l) g Parser Text
 isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..}) =

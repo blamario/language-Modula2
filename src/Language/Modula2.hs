@@ -1,5 +1,7 @@
 {-# Language FlexibleContexts, GADTs, OverloadedStrings, ScopedTypeVariables, StandaloneDeriving, TypeFamilies #-}
 
+-- | The programming language Modula-2
+
 module Language.Modula2 (parseModule, parseAndSimplifyModule, resolvePosition, resolvePositions,
                          Placed, Version(..), SomeVersion(..)) where
 
@@ -37,31 +39,41 @@ import System.FilePath (FilePath, addExtension, combine, takeDirectory)
 
 import Prelude hiding (readFile)
 
+-- | Every node in a parsed and resolved AST is wrapped with this functor
 type Placed = (,) (Int, Grammar.ParsedLexemes, Int)
 
+-- | The modes of operation
 data Options = Options{
+   -- | whether to fold the constants in the parsed module
    foldConstants :: Bool,
-   checkTypes :: Bool,
+   -- whether to check the types
+   -- checkTypes :: Bool,
+   -- | which version of the Modula-2 language?
    version :: SomeVersion}
 
 data Version l where
+   -- | the version specified by Niklaus Wirth's ''Report on the Programming Language Modula-2''
    Report :: Version Report.Language
+   -- | the version specified by the ISO standard
    ISO    :: Version ISO.Language
 
+-- | The language version in existential container
 data SomeVersion where
    SomeVersion :: Version l -> SomeVersion
 
 deriving instance Show (Version l)
 deriving instance Show SomeVersion
 
+-- | Replace the stored positions in the entire tree with offsets from the start of the given source text
 resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p q) g)
                  => Text -> g p p -> g q q
 resolvePositions src t = resolvePosition src Rank2.<$> t
 
+-- | Replace the stored positions of the given node with offset from the start of the given source text
 resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
 resolvePosition src = \((start, ws, end), a)-> ((Position.offset src start, ws, Position.offset src end), a)
 
--- | Parse and check the given text of a single module.
+-- | Parse the given text of a single module and fold constants inside it.
 parseAndSimplifyModule :: (Abstract.Modula2 l, Abstract.Nameable l,
                         Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
                     => Version l -> Text -> ParseResults Text [Abstract.Module l l Placed Placed]
@@ -70,6 +82,7 @@ parseAndSimplifyModule Report source =
 parseAndSimplifyModule ISO source =
    (ISO.ConstantFolder.foldConstants (predefined ISO) <$>) <$> parseModule ISO source
 
+-- | The predefined environment of types, constants, and procedures for the given language version.
 predefined :: (Abstract.Modula2 l, Ord (Abstract.QualIdent l)) => Version l -> ConstantFolder.Environment l
 predefined Report = Map.fromList $ map (first Abstract.nonQualIdent) $
    [("TRUE", Just Abstract.true),
