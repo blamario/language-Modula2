@@ -17,7 +17,13 @@ import Language.Oberon.Abstract
 -- | Module priority
 type Priority l = ConstExpression l
 
--- | The finally-tagless associated types and methods relevant to the Modula-2 language.
+-- | The finally-tagless associated types and methods relevant to the Modula-2 language. Every non-leaf node type has
+-- four type variables:
+--
+-- * type variable @l@ represents the language of the constructs built by the methods,
+-- * @l'@ is the language of the child node constructs,
+-- * @f'@ wraps all descendant nodes, except
+-- * @f@ wraps all direct children of the node.
 class Wirthy l => Modula2 l where
    type Export l = x | x -> l
    type Definition l = (d :: * -> (* -> *) -> (* -> *) -> *) | d -> l
