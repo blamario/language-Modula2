@@ -57,9 +57,9 @@ isoMixin ReportGrammar.Modula2Grammar{..} ISOMixin{..} = ISOMixin{
                       (delimiter ","),
    packedSetType = ISO.Abstract.packedSetType <$ keyword "PACKED" <* keyword "SET" <* keyword "OF" <*> wrap simpleType,
    moduleBody = ISO.Abstract.exceptionHandlingBlock <$> declarationSequence
-                <*> optional (keyword "BEGIN" *> wrap statementSequence)
-                <*> optional (keyword "EXCEPT" *> wrap statementSequence)
-                <*> optional (keyword "FINALLY" *> wrap statementSequence) <* keyword "END",
+                <*> optional (keyword "BEGIN" *> statementSequence)
+                <*> optional (keyword "EXCEPT" *> statementSequence)
+                <*> optional (keyword "FINALLY" *> statementSequence) <* keyword "END",
    retryStatement = ISO.Abstract.retryStatement <$ keyword "RETRY",
    arrayConstructor = ISO.Abstract.array . Just <$> qualident <*> arrayConstructedValue,
    arrayConstructedValue = braces (sepBy1 (wrap arrayPart) (delimiter ",")),
@@ -95,12 +95,12 @@ isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..})
                                    <*> brackets ((,) <$> constExpression <* delimiter ".." <*> constExpression),
       ReportGrammar.variant = ReportGrammar.variant reportGrammar <|> pure ISO.Abstract.emptyVariant,
       ReportGrammar.block = ISO.Abstract.exceptionHandlingBlock <$> declarationSequence
-                            <*> optional (keyword "BEGIN" *> wrap statementSequence)
-                            <*> optional (keyword "EXCEPT" *> wrap statementSequence) <*> pure Nothing <* keyword "END",
+                            <*> optional (keyword "BEGIN" *> statementSequence)
+                            <*> optional (keyword "EXCEPT" *> statementSequence) <*> pure Nothing <* keyword "END",
       ReportGrammar.statement = ReportGrammar.statement reportGrammar <|> retryStatement,
       ReportGrammar.caseStatement = Abstract.caseStatement <$ keyword "CASE" <*> expression
        <*  keyword "OF" <*> (catMaybes <$> sepBy1 (optional $ wrap case_prod) (delimiter "|"))
-       <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
+       <*> optional (keyword "ELSE" *> statementSequence) <* keyword "END",
       ReportGrammar.factor = ReportGrammar.factor reportGrammar <<|> wrap arrayConstructor <<|> wrap recordConstructor,
       ReportGrammar.set = Abstract.set . Just <$> qualident <*> setConstructedValue,
       ReportGrammar.mulOperator = ReportGrammar.mulOperator reportGrammar

@@ -14,6 +14,8 @@ import qualified Language.Modula2.ISO.AST as ISO.AST
 import qualified Language.Modula2.ISO.Grammar as ISO.Grammar
 import qualified Language.Modula2.ISO.ConstantFolder -- brings in HasField instances
 
+import qualified Language.Oberon.Reserializer as Reserializer
+
 import qualified Rank2 as Rank2 (Product(Pair), snd)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Deep as Deep
@@ -46,10 +48,10 @@ import Prelude hiding (getLine, getContents, readFile)
 
 import Debug.Trace
 
-data GrammarMode = SimplifiedModuleMode | ModuleMode | StatementsMode | StatementMode | ExpressionMode
+data GrammarMode = SimplifiedModuleMode | ModuleMode | StatementsMode | ExpressionMode
     deriving Show
 
-data Output = Plain | Pretty Int | Tree
+data Output = Original | Plain | Pretty Int | Tree
             deriving Show
 
 data Opts = Opts
@@ -77,6 +79,7 @@ main = execParser opts >>= main'
         <*> (option auto (long "index" <> help "Index of ambiguous parse" <> showDefault <> value 0 <> metavar "INT"))
         <*> (Pretty <$> option auto (long "pretty" <> help "Pretty-print output" <> metavar "WIDTH")
              <|> flag' Tree (long "tree" <> help "Print the output as an abstract syntax tree")
+             <|> flag' Original (long "original" <> help "Print the output with the original tokens and whitespace")
              <|> pure Plain)
         <*> optional (strOption (short 'i' <> long "include" <> metavar "DIRECTORY"
                                  <> help "Where to look for imports"))
@@ -87,7 +90,6 @@ main = execParser opts >>= main'
     mode :: Parser GrammarMode
     mode = SimplifiedModuleMode   <$ switch (long "simplified-module")
        <|> ModuleMode          <$ switch (long "module")
-       <|> StatementMode       <$ switch (long "statement")
        <|> StatementsMode      <$ switch (long "statements")
        <|> ExpressionMode      <$ switch (long "expression")
 
@@ -117,21 +119,20 @@ main' Opts{..} =
                  getLine >>=
                  case optsMode of
                      ModuleMode     -> go Report Grammar.compilationUnit "<stdin>"
-                     StatementMode  -> go Report Grammar.statement "<stdin>"
                      StatementsMode -> go Report Grammar.statementSequence "<stdin>"
-                     ExpressionMode -> go Report ((snd <$>) . Grammar.expression) "<stdin>"
+                     ExpressionMode -> go Report Grammar.expression "<stdin>"
              Nothing | ISO <- version ->
                  forever $
                  getLine >>=
                  case optsMode of
                      ModuleMode     -> go ISO Grammar.compilationUnit "<stdin>"
-                     StatementMode  -> go ISO Grammar.statement "<stdin>"
                      StatementsMode -> go ISO Grammar.statementSequence "<stdin>"
-                     ExpressionMode -> go ISO ((snd <$>) . Grammar.expression) "<stdin>"
+                     ExpressionMode -> go ISO Grammar.expression "<stdin>"
      go :: (Show a, Pretty a, a ~ g l l Placed Placed,
-            Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) (g l l)) =>
+            Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) (g l l),
+            Deep.Foldable Reserializer.Serialization (g l l)) =>
            Version l
-        -> (forall p. Functor p => Grammar.Modula2Grammar l Grammar.NodeWrap p -> p (g l l Grammar.NodeWrap Grammar.NodeWrap))
+        -> (forall p. Functor p => Grammar.Modula2Grammar l Grammar.NodeWrap p -> p (Grammar.NodeWrap (g l l Grammar.NodeWrap Grammar.NodeWrap)))
         -> String -> Text -> IO ()
      go Report production filename contents =
         report contents (getCompose $ resolvePositions contents . snd
@@ -139,7 +140,8 @@ main' Opts{..} =
      go ISO production filename contents =
         report contents (getCompose $ resolvePositions contents . snd
                          <$> getCompose (production $ Rank2.snd $ parseComplete (ISO.Grammar.modula2ISOgrammar) contents))
-     report :: (Pretty a, Show a) => Text -> ParseResults Text [a] -> IO ()
+     report :: (Pretty a, Show a, a ~ Placed (g l l Placed Placed),
+                Deep.Foldable Reserializer.Serialization (g l l)) => Text -> ParseResults Text [a] -> IO ()
      report _ (Right [x]) = succeed optsOutput x
      report _ (Right l) = putStrLn ("Ambiguous: " ++ show optsIndex ++ "/" ++ show (length l) ++ " parses")
                           >> succeed optsOutput (l !! optsIndex)
@@ -148,11 +150,16 @@ main' Opts{..} =
 type NodeWrap = ((,) Int)
 
 
-succeed :: (Pretty a, Show a) => Output -> a -> IO ()
+succeed :: (Pretty a, Show a, a ~ Placed (g l l Placed Placed),
+            Deep.Foldable Reserializer.Serialization (g l l)) => Output -> a -> IO ()
 succeed out x = case out
-                of Pretty width -> putDocW width (pretty x)
+                of Original -> Text.putStr (Reserializer.reserialize x)
+                   Pretty width -> putDocW width (pretty x)
                    --Tree -> putStrLn (reprTreeString x)
                    Plain -> print x
+
+instance {-# overlaps #-} Pretty a => Pretty (Placed a) where
+   pretty = pretty . snd
 
 instance Pretty (Module Language Language Placed Placed) where
    pretty m = pretty ((Identity . snd) Rank2.<$> m)

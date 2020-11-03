@@ -20,7 +20,7 @@ import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
 import qualified Rank2.TH
-import Language.Oberon.Grammar (Lexeme(..), ParsedLexemes(Trailing))
+import Language.Oberon.Grammar (Lexeme(..), TokenType(..), ParsedLexemes(Trailing))
 
 import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.AST as AST
@@ -77,7 +77,7 @@ data Modula2Grammar l f p = Modula2Grammar {
    statement :: p (Abstract.Statement l l f f),
    assignment :: p (Abstract.Statement l l f f),
    procedureCall :: p (Abstract.Statement l l f f),
-   statementSequence :: p (Abstract.StatementSequence l l f f),
+   statementSequence :: p (NodeWrap (Abstract.StatementSequence l l f f)),
    ifStatement :: p (Abstract.Statement l l f f),
    caseStatement :: p (Abstract.Statement l l f f),
    case_prod :: p (Abstract.Case l l f f),
@@ -100,7 +100,7 @@ data Modula2Grammar l f p = Modula2Grammar {
    definitionModule :: p (Abstract.Module l l f f),
    definitionSequence :: p [f (Abstract.Definition l l f f)],
    programModule :: p (Abstract.Module l l f f),
-   compilationUnit :: p (Abstract.Module l l f f)
+   compilationUnit :: p (NodeWrap (Abstract.Module l l f f))
    }
 
 type NodeWrap = (,) (Position, ParsedLexemes, Position)
@@ -212,26 +212,26 @@ grammar g@Modula2Grammar{..} = g{
                <?> "statement",
    assignment  =  Abstract.assignment <$> wrap designator <* delimiter ":=" <*> expression,
    procedureCall = Abstract.procedureCall <$> wrap designator <*> optional actualParameters,
-   statementSequence = Abstract.statementSequence <$> sepBy1 (wrap statement) (delimiter ";"),
+   statementSequence = wrap (Abstract.statementSequence <$> sepBy1 (wrap statement) (delimiter ";")),
    ifStatement = Abstract.ifStatement <$ keyword "IF"
-       <*> sepByNonEmpty (wrap $ Abstract.conditionalBranch <$> expression <* keyword "THEN" <*> wrap statementSequence)
+       <*> sepByNonEmpty (wrap $ Abstract.conditionalBranch <$> expression <* keyword "THEN" <*> statementSequence)
                          (keyword "ELSIF")
-       <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
+       <*> optional (keyword "ELSE" *> statementSequence) <* keyword "END",
    caseStatement = Abstract.caseStatement <$ keyword "CASE" <*> expression
        <*  keyword "OF" <*> sepBy1 (wrap case_prod) (delimiter "|")
-       <*> optional (keyword "ELSE" *> wrap statementSequence) <* keyword "END",
-   case_prod = Abstract.caseAlternative <$> caseLabelList <* delimiter ":" <*> wrap statementSequence,
+       <*> optional (keyword "ELSE" *> statementSequence) <* keyword "END",
+   case_prod = Abstract.caseAlternative <$> caseLabelList <* delimiter ":" <*> statementSequence,
    whileStatement = Abstract.whileStatement <$ keyword "WHILE" <*> expression <* keyword "DO"
-                    <*> wrap statementSequence <* keyword "END",
+                    <*> statementSequence <* keyword "END",
    repeatStatement = Abstract.repeatStatement <$ keyword "REPEAT"
-                     <*> wrap statementSequence <* keyword "UNTIL" <*> expression,
+                     <*> statementSequence <* keyword "UNTIL" <*> expression,
    forStatement = 
       Abstract.forStatement <$ keyword "FOR" <*> ident <* delimiter ":=" <*> expression
       <* keyword "TO" <*> expression <*> optional (keyword "BY" *> constExpression)
-      <* keyword "DO" <*> wrap statementSequence <* keyword "END",
-   loopStatement = Abstract.loopStatement <$ keyword "LOOP" <*> wrap statementSequence <* keyword "END",
+      <* keyword "DO" <*> statementSequence <* keyword "END",
+   loopStatement = Abstract.loopStatement <$ keyword "LOOP" <*> statementSequence <* keyword "END",
    withStatement = Abstract.withStatement <$ keyword "WITH" <*> wrap designator <* keyword "DO"
-                   <*> wrap statementSequence <* keyword "END",
+                   <*> statementSequence <* keyword "END",
    procedureDeclaration = do (procedureName, heading) <- sequenceA <$> wrap procedureHeading
                              delimiter ";"
                              body <- wrap block
@@ -241,7 +241,7 @@ grammar g@Modula2Grammar{..} = g{
                       <**> do name <- ident
                               params <- optional (wrap formalParameters)
                               return (\proc-> (name, proc name params)),
-   block = Abstract.block <$> declarationSequence <*> optional (keyword "BEGIN" *> wrap statementSequence)
+   block = Abstract.block <$> declarationSequence <*> optional (keyword "BEGIN" *> statementSequence)
            <* keyword "END",
    declarationSequence = concatMany (keyword "CONST" *> many (wrap constantDeclaration <* delimiter ";")
                                      <|> keyword "TYPE" *> many (wrap typeDeclaration <* delimiter ";")
@@ -280,7 +280,7 @@ grammar g@Modula2Grammar{..} = g{
                       name <- ident
                       con name <$> optional priority <* delimiter ";" <*> many import_prod
                                <*> wrap block <* lexicalToken (string name) <* delimiter ".",
-   compilationUnit = lexicalWhiteSpace *> (definitionModule <|> programModule) <* skipMany (char '\x1a' *> lexicalWhiteSpace)
+   compilationUnit = lexicalWhiteSpace *> wrap (definitionModule <|> programModule) <* skipMany (char '\x1a' *> lexicalWhiteSpace)
    }
 
 newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l l f f)
@@ -292,7 +292,7 @@ instance Show (BinOp l f) where
 
 instance TokenParsing (Parser (Modula2Grammar l f) Text) where
    someSpace = someLexicalSpace
-   token p = p <* lexicalWhiteSpace
+   token = lexicalToken
 
 instance LexicalParsing (Parser (Modula2Grammar l f) Text) where
    lexicalComment = do c <- comment
@@ -303,6 +303,13 @@ instance LexicalParsing (Parser (Modula2Grammar l f) Text) where
    identifierToken word = lexicalToken (do w <- word
                                            guard (w `notElem` reservedWords)
                                            return w)
+   lexicalToken p = snd <$> tmap addOtherToken (match p) <* lexicalWhiteSpace
+      where addOtherToken ([], (i, x)) = ([[Token Other i]], (i, x))
+            addOtherToken (t, (i, x)) = (t, (i, x))
+   keyword s = lexicalToken (string s
+                             *> notSatisfyChar isAlphaNum
+                             <* lift ([[Token Keyword s]], ()))
+               <?> ("keyword " <> show s)
 
 comment :: Parser g Text Text
 comment = try (string "(*"
@@ -311,9 +318,8 @@ comment = try (string "(*"
    where isCommentChar c = c /= '*' && c /= '('
 
 whiteSpace :: LexicalParsing (Parser g Text) => Parser g Text ()
-whiteSpace = tmap (first (\ws-> [concat ws])) ((\x-> lift [[Left $ WhiteSpace x]]) <$> takeCharsWhile isSpace)
-             *> skipMany (lexicalComment *> takeCharsWhile isSpace)
-             <?> "whitespace"
+whiteSpace = spaceChars *> skipMany (lexicalComment *> spaceChars) <?> "whitespace"
+   where spaceChars = (takeCharsWhile1 isSpace >>= \ws-> lift ([[WhiteSpace ws]], ())) <<|> pure ()
 
 wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
 wrap = (\p-> liftA3 surround getSourcePos p getSourcePos) . tmap store . ((,) (Trailing []) <$>)

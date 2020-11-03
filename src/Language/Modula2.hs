@@ -16,6 +16,8 @@ import Language.Modula2.ConstantFolder (Sem, ConstantFold, InhCF, SynCFExp, SynC
 import Language.Modula2.Pretty ()
 import Language.Modula2.ISO.Pretty ()
 
+import qualified Language.Oberon.Reserializer as Reserializer
+
 import qualified Rank2 as Rank2 (snd)
 import Transformation.AG (Atts, Inherited, Synthesized)
 import Transformation.AG.Generics (Auto)
@@ -66,8 +68,8 @@ deriving instance Show SomeVersion
 
 -- | Replace the stored positions in the entire tree with offsets from the start of the given source text
 resolvePositions :: (p ~ Grammar.NodeWrap, q ~ Placed, Deep.Functor (Rank2.Map p q) g)
-                 => Text -> g p p -> g q q
-resolvePositions src t = resolvePosition src Rank2.<$> t
+                 => Text -> p (g p p) -> q (g q q)
+resolvePositions src t = resolvePosition src ((resolvePosition src Rank2.<$>) <$> t)
 
 -- | Replace the stored positions of the given node with offset from the start of the given source text
 resolvePosition :: Text -> Grammar.NodeWrap a -> Placed a
@@ -76,11 +78,13 @@ resolvePosition src = \((start, ws, end), a)-> ((Position.offset src start, ws, 
 -- | Parse the given text of a single module and fold constants inside it.
 parseAndSimplifyModule :: (Abstract.Modula2 l, Abstract.Nameable l,
                         Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
-                    => Version l -> Text -> ParseResults Text [Abstract.Module l l Placed Placed]
+                    => Version l -> Text -> ParseResults Text [Placed (Abstract.Module l l Placed Placed)]
 parseAndSimplifyModule Report source =
-   (ConstantFolder.foldConstants (predefined Report) <$>) <$> parseModule Report source
+   (Reserializer.adjustPositions . (ConstantFolder.foldConstants (predefined Report) <$>) <$>)
+   <$> parseModule Report source
 parseAndSimplifyModule ISO source =
-   (ISO.ConstantFolder.foldConstants (predefined ISO) <$>) <$> parseModule ISO source
+   (Reserializer.adjustPositions . (ISO.ConstantFolder.foldConstants (predefined ISO) <$>) <$>)
+   <$> parseModule ISO source
 
 -- | The predefined environment of types, constants, and procedures for the given language version.
 predefined :: (Abstract.Modula2 l, Ord (Abstract.QualIdent l)) => Version l -> ConstantFolder.Environment l
@@ -98,14 +102,14 @@ predefined ISO = Map.fromList $ map (first Abstract.nonQualIdent) $
    where builtin name = (name, Just $ Abstract.builtin name)
 
 -- | Parse the given text of a single module.
-parseModule :: Version l -> Text -> ParseResults Text [Abstract.Module l l Placed Placed]
+parseModule :: Version l -> Text -> ParseResults Text [Placed (Abstract.Module l l Placed Placed)]
 parseModule Report source = resolve source (parseComplete Grammar.modula2grammar source)
 parseModule ISO source = resolve source (Rank2.snd $ parseComplete ISO.Grammar.modula2ISOgrammar source)
 
 resolve :: Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) (Abstract.Module l l)
         => Text
         -> Grammar.Modula2Grammar l Grammar.NodeWrap (Compose (Compose (ParseResults Text) []) ((,) [[Grammar.Lexeme]]))
-        -> ParseResults Text [Abstract.Module l l Placed Placed]
+        -> ParseResults Text [Placed (Abstract.Module l l Placed Placed)]
 resolve source results = getCompose (resolvePositions source . snd <$> getCompose (Grammar.compilationUnit results))
 
 {-

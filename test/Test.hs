@@ -114,6 +114,9 @@ prettyFile path src
    where parsedModule1 = parseAndSimplifyModule Report src
          parsedModule2 = parseAndSimplifyModule ISO src
 
+instance {-# overlaps #-} Pretty a => Pretty (Placed a) where
+   pretty = pretty . snd
+
 instance Pretty (Module Language Language Placed Placed) where
    pretty m = pretty ((Identity . snd) Rank2.<$> m)
 instance Pretty (Module ISO.Language ISO.Language Placed Placed) where
