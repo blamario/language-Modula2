@@ -18,6 +18,8 @@ import Text.Grampa (failureDescription)
 
 import qualified Transformation.Rank2 as Rank2
 
+import qualified Language.Oberon.Reserializer as Reserializer
+
 import Language.Modula2 (parseModule, parseAndSimplifyModule, Placed, Version(..))
 import Language.Modula2.AST (Language, Module)
 import qualified Language.Modula2.ISO.AST as ISO (Language)
@@ -90,26 +92,30 @@ exampleTree ancestry path =
          then (:[]) . testGroup path . concat <$> (listDirectory fullPath >>= mapM (exampleTree fullPath))
          else return . (:[]) . testCase path . unless (any (`isSuffixOf` path) [".BNF", ".bnf", ".GRM"]) $
               do moduleSource <- readFile fullPath
-                 prettyModule <- prettyFile fullPath moduleSource
-                 prettyModule' <- prettyFile fullPath prettyModule
+                 (originalModule, prettyModule) <- prettyFile fullPath moduleSource
+                 (originalModule', prettyModule') <- prettyFile fullPath originalModule
+                 (originalModule'', prettyModule'') <- prettyFile fullPath prettyModule
                  putStrLn fullPath
-                 assertEqual "pretty" prettyModule prettyModule'
+                 assertEqual "original=original" originalModule originalModule'
+                 assertEqual "pretty=pretty" prettyModule prettyModule'
+                 assertEqual "pretty=pretty'" prettyModule prettyModule''
+                 assertEqual "original=pretty" originalModule'' prettyModule''
 
-prettyFile :: FilePath -> Text -> IO Text
+prettyFile :: FilePath -> Text -> IO (Text, Text)
 prettyFile path src
    | path `elem` unparsables = case (parsedModule1, parsedModule2) of
        (Left err1, Left err2)
-          | err1 == err2 -> putStrLn (unpack $ failureDescription src err1 4) *> pure src
-          | otherwise -> putStrLn (unpack $ failureDescription src err1 4 <> failureDescription src err2 4) *> pure src
+          | err1 == err2 -> putStrLn (unpack $ failureDescription src err1 4) *> pure (src, src)
+          | otherwise -> putStrLn (unpack $ failureDescription src err1 4 <> failureDescription src err2 4) *> pure (src, src)
        _ -> error (path ++ " is supposed to be unparseable")
    | otherwise = case parsedModule1 of
-       Right [tree] -> return (renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
+       Right [tree] -> return (Reserializer.reserialize tree, renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
        Right trees -> error (show (length trees) ++ " ambiguous parses.")
        Left err1 -> case parsedModule2 of
          Left err2
           | err1 == err2 -> error (unpack $ failureDescription src err1 4)
           | otherwise -> error (unpack $ failureDescription src err1 4 <> failureDescription src err2 4)
-         Right [tree] -> return (renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
+         Right [tree] -> return (Reserializer.reserialize tree, renderStrict $ layoutPretty defaultLayoutOptions $ pretty tree)
          Right trees -> error (show (length trees) ++ " ambiguous parses.")
    where parsedModule1 = parseAndSimplifyModule Report src
          parsedModule2 = parseAndSimplifyModule ISO src

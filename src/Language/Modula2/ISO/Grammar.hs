@@ -13,13 +13,15 @@ import Data.Monoid ((<>), Endo(Endo, appEndo))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive.Transformer (lift)
+import Text.Grampa.ContextFree.LeftRecursive.Transformer (lift, tmap)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
 import qualified Rank2
 import qualified Rank2.TH
 import Transformation.Deep as Deep (Product(Pair))
+
+import Language.Oberon.Grammar (TokenType(..))
 
 import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.ISO.Abstract as ISO.Abstract
@@ -110,7 +112,7 @@ isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..})
 
 instance TokenParsing (Parser (ISOGrammar l) Text) where
    someSpace = someLexicalSpace
-   token p = p <* lexicalWhiteSpace
+   token = lexicalToken
 
 instance LexicalParsing (Parser (ISOGrammar l) Text) where
    lexicalComment = do c <- ReportGrammar.comment
@@ -121,6 +123,13 @@ instance LexicalParsing (Parser (ISOGrammar l) Text) where
    identifierToken word = lexicalToken (do w <- word
                                            guard (w `notElem` reservedWords)
                                            return w)
+   lexicalToken p = snd <$> tmap addOtherToken (match p) <* lexicalWhiteSpace
+      where addOtherToken ([], (i, x)) = ([[ReportGrammar.Token Other i]], (i, x))
+            addOtherToken (t, (i, x)) = (t, (i, x))
+   keyword s = lexicalToken (string s
+                             *> notSatisfyChar isAlphaNum
+                             <* lift ([[ReportGrammar.Token Keyword s]], ()))
+               <?> ("keyword " <> show s)
 
 reservedWords = ReportGrammar.reservedWords <> ["EXCEPT", "FINALLY", "FORWARD", "PACKEDSET", "REM", "RETRY"]
 

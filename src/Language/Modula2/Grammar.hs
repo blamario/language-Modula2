@@ -138,7 +138,7 @@ grammar g@Modula2Grammar{..} = g{
               <|> Abstract.Less <$ operator "<" <|> Abstract.LessOrEqual <$ operator "<=" 
               <|> Abstract.Greater <$ operator ">" <|> Abstract.GreaterOrEqual <$ operator ">=" 
               <|> Abstract.In <$ keyword "IN",
-   addOperator = BinOp . wrapBinary 
+   addOperator = BinOp . wrapBinary
                  <$> (Abstract.add <$ operator "+" <|> Abstract.subtract <$ operator "-" 
                       <|> Abstract.or <$ keyword "OR"),
    mulOperator = BinOp . wrapBinary
@@ -280,12 +280,12 @@ grammar g@Modula2Grammar{..} = g{
                       name <- ident
                       con name <$> optional priority <* delimiter ";" <*> many import_prod
                                <*> wrap block <* lexicalToken (string name) <* delimiter ".",
-   compilationUnit = lexicalWhiteSpace *> wrap (definitionModule <|> programModule) <* skipMany (char '\x1a' *> lexicalWhiteSpace)
+   compilationUnit = wrap (lexicalWhiteSpace *> (definitionModule <|> programModule)) <* skipMany (char '\x1a' *> lexicalWhiteSpace)
    }
 
-newtype BinOp l f = BinOp {applyBinOp :: (f (Abstract.Expression l l f f)
-                                          -> f (Abstract.Expression l l f f)
-                                          -> f (Abstract.Expression l l f f))}
+newtype BinOp l f = BinOp {applyBinOp :: f (Abstract.Expression l l f f)
+                                      -> f (Abstract.Expression l l f f)
+                                      -> f (Abstract.Expression l l f f)}
 
 instance Show (BinOp l f) where
    show = const "BinOp{}"
@@ -327,7 +327,7 @@ wrap = (\p-> liftA3 surround getSourcePos p getSourcePos) . tmap store . ((,) (T
          store (wss, (Trailing ws', a)) = (mempty, (Trailing $ ws' <> concat wss, a))
 
 wrapBinary :: (NodeWrap a -> NodeWrap a -> a) -> (NodeWrap a -> NodeWrap a -> NodeWrap a)
-wrapBinary op a@(pos, _) b = (pos, op a b)
+wrapBinary op a@((start, _, _), _) b@((_, _, end), _) = ((start, mempty, end), op a b)
 
 moptional p = p <|> mempty
 
