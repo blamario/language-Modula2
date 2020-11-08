@@ -116,8 +116,7 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
    pretty (Precedence p e) =
       Abstract.maybe3 mempty (pretty . Precedence p) (Abstract.coExpression @Language @(Abstract.WirthySubsetOf Oberon.Language) e)
 
-instance {-# OVERLAPS #-} Pretty (Abstract.Value l l Identity Identity) =>
-         Pretty (Value Language l Identity Identity) where
+instance Pretty (Abstract.Value l l Identity Identity) => Pretty (Value Language l Identity Identity) where
    pretty (CharCode c) = pretty (showOct c "") <> "C"
    pretty v = Abstract.maybe3 mempty pretty (Abstract.coValue @Language @(Abstract.WirthySubsetOf Oberon.Language) v)
 

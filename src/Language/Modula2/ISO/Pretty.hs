@@ -135,8 +135,7 @@ instance (Pretty (Precedence (Abstract.Expression l l Identity Identity)),
           Pretty (Abstract.QualIdent l)) => Pretty (Expression Language l Identity Identity) where
    pretty e = pretty (Precedence 0 e)
 
-instance {-# OVERLAPS #-} Pretty (Abstract.Value l l Identity Identity) =>
-         Pretty (Report.Value Language l Identity Identity) where
+instance Pretty (Abstract.Value l l Identity Identity) => Pretty (Report.Value Language l Identity Identity) where
    pretty v = Abstract.maybe3 mempty pretty (Abstract.coValue @Language @(Abstract.WirthySubsetOf Report.Language) v)
 
 instance (Pretty (Abstract.Expression l l Identity Identity)) => Pretty (Item Language l Identity Identity) where
