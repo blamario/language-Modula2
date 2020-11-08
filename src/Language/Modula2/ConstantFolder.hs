@@ -44,14 +44,14 @@ import Transformation.AG.Generics (Bequether(..), Synthesizer(..), SynthesizedFi
 
 import qualified Language.Modula2.Abstract as Abstract
 import qualified Language.Modula2.AST as AST
-import Language.Modula2.Grammar (ParsedLexemes(Trailing))
+import Language.Modula2.Grammar (ParsedLexemes(Trailing), Lexeme(WhiteSpace))
 import qualified Language.Oberon.Abstract as Oberon.Abstract
 import qualified Language.Oberon.AST as Oberon.AST
 import qualified Language.Oberon.ConstantFolder as Oberon
 import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Sem, Environment,
                                        InhCF(..), InhCFRoot(..), SynCF(..), SynCF',
                                        SynCFRoot(..), SynCFMod(..), SynCFDesignator(..), SynCFMod', SynCFExp(..),
-                                       folded', foldedExp, foldedExp')
+                                       anyWhitespace, folded', foldedExp, foldedExp')
 
 -- | Fold the constants in the given collection of Modula-2 modules (a 'Map' of modules keyed by module name). It uses
 -- the constant declarations from the modules as well as the given 'Environment' of predefined constants and
@@ -187,7 +187,7 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l), Abstract.Modula2 λ,
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Element l l Sem Sem) ~ SynCF' (Abstract.Element l l),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Designator l l Sem Sem) ~ SynCFDesignator l) =>
          Synthesizer (Auto ConstantFold) (AST.Expression λ l) Sem Placed where
-   synthesis _ (pos@(start, _, end), AST.Relation op _ _) _ (AST.Relation _op left right) =
+   synthesis _ (pos@(start, ls, end), AST.Relation op _ _) _ (AST.Relation _op left right) =
       case join (compareValues <$> foldedValue (syn left) <*> foldedValue (syn right))
       of Just value -> Oberon.literalSynthesis value
          Nothing -> SynCFExp{folded= Mapped (pos,
@@ -205,7 +205,7 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l), Abstract.Modula2 λ,
             compareValues (_, AST.String l) (ls, AST.CharCode r) = repos ls
                                                                    <$> relate op (compare l (Text.singleton $ chr r))
             compareValues _ _                               = Nothing
-            repos (_, ls, _) v = ((start, ls, end), v)
+            repos (_, ls', _) v = ((start, anyWhitespace ls ls', end), v)
             relate Abstract.Equal EQ          = Just Abstract.true
             relate Abstract.Equal _           = Just Abstract.false
             relate Abstract.Unequal EQ        = Just Abstract.false
@@ -219,16 +219,19 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l), Abstract.Modula2 λ,
             relate Abstract.GreaterOrEqual LT = Just Abstract.false
             relate Abstract.GreaterOrEqual _  = Just Abstract.true
             relate Abstract.In _              = Nothing
-   synthesis _ (pos@(start, _, end), _) _ (AST.Positive expr) =
+   synthesis _ (pos@(start, ls, end), _) _ (AST.Positive expr) =
       case foldedValue (syn expr)
-      of Just ((_, ls, _), AST.Integer n) -> Oberon.literalSynthesis ((start, ls, end), AST.Integer n)
-         Just ((_, ls, _), AST.Real n) -> Oberon.literalSynthesis ((start, ls, end), AST.Real n)
+      of Just ((_, ls', _), AST.Integer n) -> Oberon.literalSynthesis ((start, anyWhitespace ls ls', end),
+                                                                       AST.Integer n)
+         Just ((_, ls', _), AST.Real n) -> Oberon.literalSynthesis ((start, anyWhitespace ls ls', end), AST.Real n)
          _ -> SynCFExp{folded= Mapped (pos, Abstract.positive $ foldedExp' $ syn expr),
                        foldedValue= Nothing}
-   synthesis _ (pos@(start, _, end), _) _ (AST.Negative expr) =
+   synthesis _ (pos@(start, ls, end), _) _ (AST.Negative expr) =
       case foldedValue (syn expr)
-      of Just ((_, ls, _), AST.Integer n) -> Oberon.literalSynthesis ((start, ls, end), AST.Integer $ negate n)
-         Just ((_, ls, _), AST.Real n) -> Oberon.literalSynthesis ((start, ls, end), AST.Real $ negate n)
+      of Just ((_, ls', _), AST.Integer n) -> Oberon.literalSynthesis ((start, anyWhitespace ls ls', end),
+                                                                       AST.Integer $ negate n)
+         Just ((_, ls', _), AST.Real n) -> Oberon.literalSynthesis ((start, anyWhitespace ls ls', end),
+                                                                    AST.Real $ negate n)
          _ -> SynCFExp{folded= Mapped (pos, Abstract.negative $ foldedExp' $ syn expr),
                        foldedValue= Nothing}
    synthesis _ (pos, _) _ (AST.Add left right) =
@@ -247,10 +250,10 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l), Abstract.Modula2 λ,
       foldBinaryInteger pos Abstract.modulo mod (syn left) (syn right)
    synthesis _ (pos, _) _ (AST.And left right) =
       foldBinaryBoolean pos Abstract.and (&&) (syn left) (syn right)
-   synthesis _ (pos@(start, _, end), _) _ (AST.Not expr) =
+   synthesis _ (pos@(start, ls, end), _) _ (AST.Not expr) =
       case foldedValue (syn expr)
-      of Just ((_, ls, _), AST.Boolean True) -> Oberon.literalSynthesis ((start, ls, end), Abstract.false)
-         Just ((_, ls, _), AST.Boolean False) -> Oberon.literalSynthesis ((start, ls, end), Abstract.true)
+      of Just ((_, ls', _), AST.Boolean b) -> Oberon.literalSynthesis ((start, anyWhitespace ls ls', end),
+                                                                       if b then Abstract.false else Abstract.true)
          _ -> SynCFExp{folded= Mapped (pos, Abstract.not $ foldedExp' $ syn expr),
                        foldedValue= Nothing}
    synthesis _ (pos, AST.Set t _elements) _ (AST.Set _t elements) =
@@ -339,14 +342,14 @@ foldBinaryArithmetic :: forall λ l f. (f ~ Placed, Abstract.Value l ~ AST.Value
                      -> (f (Abstract.Expression l l f f) -> f (Abstract.Expression l l f f) -> Abstract.Expression λ l f f)
                      -> (forall n. Num n => n -> n -> n)
                      -> SynCFExp l l -> SynCFExp l l -> SynCFExp λ l
-foldBinaryArithmetic pos@(start, _, end) node op l r =
+foldBinaryArithmetic pos@(start, ls, end) node op l r =
    case join (foldValues <$> foldedValue l <*> foldedValue r)
    of Just v -> Oberon.literalSynthesis v
       Nothing -> SynCFExp{folded= Mapped (pos, node (foldedExp' l) (foldedExp' r)),
                           foldedValue= Nothing}
    where foldValues :: Placed (AST.Value l l f f) -> Placed (AST.Value l l f f) -> Maybe (Placed (AST.Value l l f f))
          foldBareValues :: AST.Value l l f f -> AST.Value l l f f -> Maybe (AST.Value l l f f)
-         foldValues (_, l') ((_, ls, _), r') = (,) (start, ls, end) <$> foldBareValues l' r'
+         foldValues (_, l') ((_, ls', _), r') = (,) (start, anyWhitespace ls ls', end) <$> foldBareValues l' r'
          foldBareValues (AST.Integer l') (AST.Integer r') = Just (AST.Integer $ op l' r')
          foldBareValues (AST.Real l')    (AST.Real r')    = Just (AST.Real $ op l' r')
          foldBareValues (AST.Integer l') (AST.Real r')    = Just (AST.Real $ op (fromIntegral l') r')
@@ -359,13 +362,14 @@ foldBinaryFractional :: forall λ l f. (f ~ Placed, Abstract.Value l ~ AST.Value
                      -> (f (Abstract.Expression l l f f) -> f (Abstract.Expression l l f f) -> Abstract.Expression λ l f f)
                      -> (forall n. Fractional n => n -> n -> n)
                      -> SynCFExp l l -> SynCFExp l l -> SynCFExp λ l
-foldBinaryFractional pos@(start, _, end) node op l r =
+foldBinaryFractional pos@(start, ls, end) node op l r =
    case join (foldValues <$> foldedValue l <*> foldedValue r)
    of Just v -> Oberon.literalSynthesis v
       Nothing -> SynCFExp{folded= Mapped (pos, node (foldedExp' l) (foldedExp' r)),
                           foldedValue= Nothing}
    where foldValues :: Placed (AST.Value l l f f) -> Placed (AST.Value l l f f) -> Maybe (Placed (AST.Value l l f f))
-         foldValues (_, AST.Real l') ((_, ls, _), AST.Real r') = Just ((start, ls, end), AST.Real $ op l' r')
+         foldValues (_, AST.Real l') ((_, ls', _), AST.Real r') = Just ((start, anyWhitespace ls ls', end),
+                                                                        AST.Real $ op l' r')
          foldValues _ _ = Nothing
 
 foldBinaryInteger :: forall λ l f. (f ~ Placed, Abstract.Value l ~ AST.Value l, Abstract.Wirthy λ,
@@ -374,13 +378,14 @@ foldBinaryInteger :: forall λ l f. (f ~ Placed, Abstract.Value l ~ AST.Value l,
                      -> (f (Abstract.Expression l l f f) -> f (Abstract.Expression l l f f) -> Abstract.Expression λ l f f)
                      -> (forall n. Integral n => n -> n -> n)
                      -> SynCFExp l l -> SynCFExp l l -> SynCFExp λ l
-foldBinaryInteger pos@(start, _, end) node op l r =
+foldBinaryInteger pos@(start, ls, end) node op l r =
    case join (foldValues <$> foldedValue l <*> foldedValue r)
    of Just v -> Oberon.literalSynthesis v
       Nothing -> SynCFExp{folded= Mapped (pos, node (foldedExp' l) (foldedExp' r)),
                           foldedValue= Nothing}
    where foldValues :: Placed (AST.Value l l f f) -> Placed (AST.Value l l f f) -> Maybe (Placed (AST.Value l l f f))
-         foldValues (_, AST.Integer l') ((_, ls, _), AST.Integer r') = Just ((start, ls, end), AST.Integer $ op l' r')
+         foldValues (_, AST.Integer l') ((_, ls', _), AST.Integer r') = Just ((start, anyWhitespace ls ls', end),
+                                                                              AST.Integer $ op l' r')
          foldValues _ _ = Nothing
 
 foldBinaryBoolean :: forall λ l f. (f ~ Placed, Abstract.Value l ~ AST.Value l, Abstract.Wirthy λ,
@@ -389,13 +394,14 @@ foldBinaryBoolean :: forall λ l f. (f ~ Placed, Abstract.Value l ~ AST.Value l,
                   -> (f (Abstract.Expression l l f f) -> f (Abstract.Expression l l f f) -> Abstract.Expression λ l f f)
                   -> (Bool -> Bool -> Bool)
                   -> SynCFExp l l -> SynCFExp l l -> SynCFExp λ l
-foldBinaryBoolean pos@(start, _, end) node op l r =
+foldBinaryBoolean pos@(start, ls, end) node op l r =
    case join (foldValues <$> foldedValue l <*> foldedValue r)
    of Just v -> Oberon.literalSynthesis v
       Nothing -> SynCFExp{folded= Mapped (pos, node (foldedExp' l) (foldedExp' r)),
                           foldedValue= Nothing}
    where foldValues :: Placed (AST.Value l l f f) -> Placed (AST.Value l l f f) -> Maybe (Placed (AST.Value l l f f))
-         foldValues (_, AST.Boolean l') ((_, ls, _), AST.Boolean r') = Just ((start, ls, end), AST.Boolean $ op l' r')
+         foldValues (_, AST.Boolean l') ((_, ls', _), AST.Boolean r') = Just ((start, anyWhitespace ls ls', end),
+                                                                              AST.Boolean $ op l' r')
          foldValues _ _ = Nothing
 
 instance (Abstract.Modula2 l, Ord (Abstract.QualIdent l), v ~ Abstract.Value l l Placed Placed,
