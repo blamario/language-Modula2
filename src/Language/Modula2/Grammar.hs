@@ -11,7 +11,7 @@ import Control.Monad (guard, void)
 import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
 import Data.List.NonEmpty (NonEmpty, toList)
 import Data.Maybe (catMaybes)
-import Data.Monoid ((<>), Endo(Endo, appEndo))
+import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
@@ -43,8 +43,8 @@ data Modula2Grammar l f p = Modula2Grammar {
    constantDefinition :: p (Abstract.Definition l l f f),
    constExpression :: p (NodeWrap (Abstract.ConstExpression l l f f)),
    relation :: p Abstract.RelOp,
-   addOperator :: p (BinOp l f),
-   mulOperator :: p (BinOp l f),
+   addOperator :: p (f (Abstract.Expression l l f f) -> f (Abstract.Expression l l f f) -> Abstract.Expression l l f f),
+   mulOperator :: p (f (Abstract.Expression l l f f) -> f (Abstract.Expression l l f f) -> Abstract.Expression l l f f),
    set :: p (Abstract.Expression l l f f),
    element :: p (Abstract.Element l l f f),
    typeDeclaration :: p (Abstract.Declaration l l f f),
@@ -138,13 +138,10 @@ grammar g@Modula2Grammar{..} = g{
               <|> Abstract.Less <$ operator "<" <|> Abstract.LessOrEqual <$ operator "<=" 
               <|> Abstract.Greater <$ operator ">" <|> Abstract.GreaterOrEqual <$ operator ">=" 
               <|> Abstract.In <$ keyword "IN",
-   addOperator = BinOp . wrapBinary
-                 <$> (Abstract.add <$ operator "+" <|> Abstract.subtract <$ operator "-" 
-                      <|> Abstract.or <$ keyword "OR"),
-   mulOperator = BinOp . wrapBinary
-                 <$> (Abstract.multiply <$ operator "*" <|> Abstract.divide <$ operator "/"
-                      <|> Abstract.integerDivide <$ keyword "DIV" <|> Abstract.modulo <$ keyword "MOD" 
-                      <|> Abstract.and <$ (operator "&" <|> keyword "AND")),
+   addOperator = Abstract.add <$ operator "+" <|> Abstract.subtract <$ operator "-" <|> Abstract.or <$ keyword "OR",
+   mulOperator = Abstract.multiply <$ operator "*" <|> Abstract.divide <$ operator "/"
+                 <|> Abstract.integerDivide <$ keyword "DIV" <|> Abstract.modulo <$ keyword "MOD"
+                 <|> Abstract.and <$ (operator "&" <|> keyword "AND"),
    set = Abstract.set <$> optional qualident <*> braces (sepBy (wrap element) (delimiter ",")),
    element = Abstract.element <$> expression
              <|> Abstract.range <$> expression <* delimiter ".." <*> expression,
@@ -190,11 +187,11 @@ grammar g@Modula2Grammar{..} = g{
                 <|> wrap (flip Abstract.relation <$> simpleExpression <*> relation <*> simpleExpression)
                 <?> "expression",
    simpleExpression =
-      (wrap (Abstract.positive <$ operator "+" <*> term)
-       <|> wrap (Abstract.negative <$ operator "-" <*> term :: Parser g Text (Abstract.Expression l l NodeWrap NodeWrap))
-       <|> term)
-      <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> addOperator <*> term))),
-   term = factor <**> (appEndo <$> concatMany (Endo <$> (flip . applyBinOp <$> mulOperator <*> factor))),
+      wrap (Abstract.positive <$ operator "+" <*> term
+            <|> Abstract.negative <$ operator "-" <*> term)
+      <|> term
+      <|> wrap (simpleExpression <**> addOperator <*> term),
+   term = factor <|> wrap (term <**> mulOperator <*> factor),
    factor = wrap (Abstract.literal <$> wrap (number
                                              <|> Abstract.string <$> string_prod)
                   <|> set
@@ -283,13 +280,6 @@ grammar g@Modula2Grammar{..} = g{
    compilationUnit = wrap (lexicalWhiteSpace *> (definitionModule <|> programModule)) <* skipMany (char '\x1a' *> lexicalWhiteSpace)
    }
 
-newtype BinOp l f = BinOp {applyBinOp :: f (Abstract.Expression l l f f)
-                                      -> f (Abstract.Expression l l f f)
-                                      -> f (Abstract.Expression l l f f)}
-
-instance Show (BinOp l f) where
-   show = const "BinOp{}"
-
 instance TokenParsing (Parser (Modula2Grammar l f) Text) where
    someSpace = someLexicalSpace
    token = lexicalToken
@@ -325,9 +315,6 @@ wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
 wrap = (\p-> liftA3 surround getSourcePos p getSourcePos) . tmap store . ((,) (Trailing []) <$>)
    where surround start (lexemes, p) end = ((start, lexemes, end), p)
          store (wss, (Trailing ws', a)) = (mempty, (Trailing $ ws' <> concat wss, a))
-
-wrapBinary :: (NodeWrap a -> NodeWrap a -> a) -> (NodeWrap a -> NodeWrap a -> NodeWrap a)
-wrapBinary op a@((start, _, _), _) b@((_, _, end), _) = ((start, mempty, end), op a b)
 
 moptional p = p <|> mempty
 

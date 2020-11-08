@@ -9,7 +9,7 @@ import Control.Monad (guard, void)
 import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
 import Data.List.NonEmpty (NonEmpty, toList)
 import Data.Maybe (catMaybes)
-import Data.Monoid ((<>), Endo(Endo, appEndo))
+import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
@@ -106,8 +106,7 @@ isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..})
       ReportGrammar.factor = ReportGrammar.factor reportGrammar <<|> wrap arrayConstructor <<|> wrap recordConstructor,
       ReportGrammar.set = Abstract.set . Just <$> qualident <*> setConstructedValue,
       ReportGrammar.mulOperator = ReportGrammar.mulOperator reportGrammar
-                                  <|> ReportGrammar.BinOp . ReportGrammar.wrapBinary
-                                      <$> (ISO.Abstract.remainder <$ keyword "REM")}
+                                  <|> ISO.Abstract.remainder <$ keyword "REM"}
    where reportGrammar = ReportGrammar.grammar report
 
 instance TokenParsing (Parser (ISOGrammar l) Text) where

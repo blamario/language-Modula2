@@ -77,7 +77,7 @@ resolvePosition src = \((start, ws, end), a)-> ((Position.offset src start, ws, 
 
 -- | Parse the given text of a single module and fold constants inside it.
 parseAndSimplifyModule :: (Abstract.Modula2 l, Abstract.Nameable l,
-                        Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
+                           Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
                     => Version l -> Text -> ParseResults Text [Placed (Abstract.Module l l Placed Placed)]
 parseAndSimplifyModule Report source =
    (Reserializer.adjustPositions . (ConstantFolder.foldConstants (predefined Report) <$>) <$>)
