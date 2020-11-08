@@ -26,6 +26,7 @@ import Data.Semigroup (Semigroup(..))
 import qualified Data.Text as Text
 import Foreign.Storable (sizeOf)
 import Language.Haskell.TH (appT, conT, varT, varE, newName)
+import Data.Text.Prettyprint.Doc (Pretty)
 
 import qualified Rank2
 import qualified Transformation
@@ -50,10 +51,9 @@ import qualified Language.Oberon.AST as Oberon.AST
 import qualified Language.Oberon.ConstantFolder as Oberon.ConstantFolder
 import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Placed, Sem, Environment,
                                        InhCF(..), InhCFRoot(..), SynCF(..), SynCF',
-                                       SynCFRoot(..), SynCFMod(..), SynCFMod', SynCFExp(..),
+                                       SynCFRoot(..), SynCFMod(..), SynCFMod', SynCFExp(..), SynCFDesignator(..),
                                        folded', foldedExp, foldedExp')
-import Language.Modula2.ConstantFolder (SynCFDesignator(..),
-                                        foldBinaryArithmetic, foldBinaryBoolean,
+import Language.Modula2.ConstantFolder (foldBinaryArithmetic, foldBinaryBoolean,
                                         foldBinaryFractional, foldBinaryInteger,
                                         maxCardinal, maxInteger, minInteger, maxInt32, minInt32, maxSet, minSet,
                                         doubleSize, floatSize, intSize, int32Size,
@@ -176,7 +176,8 @@ instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord
           Atts (Synthesized (Auto ConstantFold)) (Abstract.ConstExpression l l Sem Sem) ~ SynCFExp l l) =>
          SynthesizedField "moduleEnv" (Map k (Maybe v)) (Auto ConstantFold) (AST.Declaration full l l) Sem Placed where
    synthesizedField _ _ (pos, AST.ConstantDeclaration namedef _) _ (AST.ConstantDeclaration _ expression) =
-      Map.singleton (Abstract.nonQualIdent $ Abstract.getIdentDefName namedef) (foldedValue $ syn expression)
+      Map.singleton (Abstract.nonQualIdent $ Abstract.getIdentDefName namedef)
+                    ((snd <$>) . foldedValue $ syn expression)
    synthesizedField _ _ (pos, AST.ModuleDeclaration moduleName _priority imports exports _body)
                     _ (AST.ModuleDeclaration _name priority _imports _exports body) =
       foldMap exportedEnv exports
@@ -191,15 +192,17 @@ instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord
 
 instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
           Abstract.QualIdent l ~ AST.QualIdent l, Abstract.Value l ~ AST.Value l,
+          λ ~ AST.Language,
 --          Abstract.QualIdent Report.Language ~ AST.QualIdent l,
           Coercible (Abstract.QualIdent Report.Language) (AST.QualIdent l),
           Coercible (Abstract.Value Report.Language Report.Language) (AST.Value l l),
           InhCF l ~ InhCF λ,
+          Pretty (AST.Value l l Identity Identity),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Element l l Sem Sem) ~ SynCF' (Abstract.Element l l),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Item l l Sem Sem) ~ SynCF' (Abstract.Item l l),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Designator l l Sem Sem) ~ SynCFDesignator l) =>
-         Synthesizer (Auto ConstantFold) (AST.Expression AST.Language l) Sem Placed where
+         Synthesizer (Auto ConstantFold) (AST.Expression λ l) Sem Placed where
    synthesis _ (pos, _) _ (AST.Remainder left right) = 
       foldBinaryInteger pos Abstract.remainder div (syn left) (syn right)
    synthesis _ (pos, _) _ (AST.Array itemType dimensions) =
@@ -224,8 +227,7 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
                SynCFExp{folded= Mapped (pos', fromJust (coExpression @Report.Language
                                                         @(Abstract.WirthySubsetOf AST.Language) reportExpression)),
                         foldedValue= reportValue}
-            toReport :: Abstract.Expression AST.Language l f1 f2
-                     -> Report.Expression Report.Language l f1 f2
+            toReport :: Abstract.Expression AST.Language l f1 f2 -> Report.Expression Report.Language l f1 f2
             toReport s = fromJust (coExpression @AST.Language @(Abstract.WirthySubsetOf Report.Language) s)
 
 -- * More boring Transformation.Functor instances, TH candidates
