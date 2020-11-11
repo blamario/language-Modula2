@@ -1,4 +1,4 @@
-cabal-version:       >=1.10
+cabal-version:       2.4
 
 name:                language-Modula2
 version:             0.1
@@ -8,14 +8,14 @@ description:
    orginal language report and as standardized by the ISO.
 homepage:            https://github.com/blamario/language-Modula2
 bug-reports:         https://github.com/blamario/language-Modula2/issues
-license:             GPL-3
+license:             GPL-3.0-or-later
 license-file:        LICENSE
 author:              Mario Blažević
 maintainer:          blamario@protonmail.com
 copyright:           (c) 2020 Mario Blažević
 category:            Language
 build-type:          Simple
-extra-source-files:  README.md, CHANGELOG.md, examples/**/*.Def, examples/**/*.Mod
+extra-source-files:  README.md, CHANGELOG.md, examples/**/*.def, examples/**/*.DEF, examples/**/*.mod, examples/**/*.MOD
 
 library
   exposed-modules:     Language.Modula2,
