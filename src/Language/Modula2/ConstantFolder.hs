@@ -113,15 +113,15 @@ type instance Atts (Synthesized (Auto ConstantFold)) (AST.Statement λ l _ _) = 
 type instance Atts (Synthesized (Auto ConstantFold)) (AST.Variant λ l _ _) = SynCF' (AST.Variant λ l)
 
 type instance Atts (Inherited (Auto ConstantFold)) (Modules l _ _) = InhCFRoot l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Module λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Declaration full λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.ProcedureHeading λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Type λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.FieldList λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Expression λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Designator λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Statement λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Variant λ l _ _) = InhCF λ
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Module λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Declaration full λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.ProcedureHeading λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Type λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.FieldList λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Expression λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Designator λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Statement λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Variant λ l _ _) = InhCF l
 
 type Placed = (,) (Int, ParsedLexemes, Int)
 

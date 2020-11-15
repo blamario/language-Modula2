@@ -118,14 +118,14 @@ type instance Atts (Synthesized (Auto ConstantFold)) (AST.Statement λ l _ _) = 
 type instance Atts (Synthesized (Auto ConstantFold)) (AST.Variant λ l _ _) = SynCF' (AST.Variant l l)
 
 type instance Atts (Inherited (Auto ConstantFold)) (Modules l _ _) = InhCFRoot l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Block λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Declaration full λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.AddressedIdent λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Type λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Item λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Expression λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Statement λ l _ _) = InhCF λ
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Variant λ l _ _) = InhCF λ
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Block λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Declaration full λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.AddressedIdent λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Type λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Item λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Expression λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Statement λ l _ _) = InhCF l
+type instance Atts (Inherited (Auto ConstantFold)) (AST.Variant λ l _ _) = InhCF l
 
 wrap :: a -> Mapped Placed a
 wrap = Mapped . (,) (0, Trailing [], 0)
@@ -191,11 +191,7 @@ instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord
    synthesizedField _ _ _ _ _ = mempty
 
 instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
-          Abstract.QualIdent l ~ AST.QualIdent l, Abstract.Value l ~ AST.Value l,
-          λ ~ AST.Language,
---          Abstract.QualIdent Report.Language ~ AST.QualIdent l,
-          Coercible (Abstract.QualIdent Report.Language) (AST.QualIdent l),
-          Coercible (Abstract.Value Report.Language Report.Language) (AST.Value l l),
+          Abstract.Expression λ ~ AST.Expression AST.Language, Abstract.QualIdent λ ~ AST.QualIdent AST.Language,
           InhCF l ~ InhCF λ,
           Pretty (AST.Value l l Identity Identity),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l Sem Sem) ~ SynCFExp l l,
@@ -215,8 +211,7 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
       SynCFExp{folded= Mapped (pos, Abstract.set t (getMapped . folded' . syn <$> getZipList elements)),
                foldedValue= Nothing}
    synthesis t (pos, self) (InhCF environment currMod) synthesized =
-      fromReport (synthesis t (pos, toReport self) (InhCF (coerce <$> Map.mapKeysMonotonic coerce environment) currMod)
-                  $ toReport synthesized)
+      fromReport (synthesis t (pos, toReport self) (InhCF environment currMod) $ toReport synthesized)
       where fromJust :: forall f a (b :: * -> *) (c :: * -> *). Oberon.Abstract.Maybe3 f a b c -> f a b c
             fromJust (Oberon.Abstract.Maybe3 Nothing) =
                error ("Modula-2 expression cannot be converted from ISO to Report at " ++ show pos)
