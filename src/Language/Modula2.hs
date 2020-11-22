@@ -12,7 +12,7 @@ import qualified Language.Modula2.Grammar as Grammar
 import qualified Language.Modula2.ISO.Grammar as ISO.Grammar
 import qualified Language.Modula2.ConstantFolder as ConstantFolder
 import qualified Language.Modula2.ISO.ConstantFolder as ISO.ConstantFolder
-import Language.Modula2.ConstantFolder (Sem, ConstantFold, InhCF, SynCFExp, SynCFMod')
+import Language.Modula2.ConstantFolder (ConstantFold)
 import Language.Modula2.Pretty ()
 import Language.Modula2.ISO.Pretty ()
 

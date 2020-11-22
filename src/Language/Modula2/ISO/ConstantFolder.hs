@@ -6,8 +6,7 @@
 -- using an attribute grammar. Other exports are helper functions and attribute types that can be reused for other
 -- languages or attribute grammars.
 
-module Language.Modula2.ISO.ConstantFolder (foldConstants, InhCF,
-                                            SynCF(..), SynCFDesignator(..), SynCFExp(..), SynCFMod', Environment) where
+module Language.Modula2.ISO.ConstantFolder (foldConstants, ConstantFold, Environment) where
 
 import Control.Applicative (liftA2, ZipList(ZipList, getZipList))
 import Control.Arrow (first)
@@ -52,12 +51,8 @@ import qualified Language.Oberon.ConstantFolder as Oberon.ConstantFolder
 import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Placed, Sem, Environment,
                                        InhCF(..), InhCFRoot(..), SynCF(..), SynCF',
                                        SynCFRoot(..), SynCFMod(..), SynCFMod', SynCFExp(..), SynCFDesignator(..),
-                                       folded', foldedExp, foldedExp')
-import Language.Modula2.ConstantFolder (foldBinaryArithmetic, foldBinaryBoolean,
-                                        foldBinaryFractional, foldBinaryInteger,
-                                        maxCardinal, maxInteger, minInteger, maxInt32, minInt32, maxSet, minSet,
-                                        doubleSize, floatSize, intSize, int32Size,
-                                        maxReal, minReal)
+                                       anyWhitespace, folded', foldedExp, foldedExp')
+import Language.Modula2.ConstantFolder ()
 
 -- | Fold the constants in the given collection of Modula-2 modules (a 'Map' of modules keyed by module name). It uses
 -- the constant declarations from the modules as well as the given 'Environment' of predefined constants and
@@ -224,6 +219,23 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
                         foldedValue= reportValue}
             toReport :: Abstract.Expression AST.Language l f1 f2 -> Report.Expression Report.Language l f1 f2
             toReport s = fromJust (coExpression @AST.Language @(Abstract.WirthySubsetOf Report.Language) s)
+
+
+foldBinaryInteger :: forall λ l f. (f ~ Placed, Abstract.Value l ~ AST.Value l, Abstract.Wirthy λ,
+                               Pretty (Abstract.Value l l Identity Identity)) =>
+                        (Int, ParsedLexemes, Int)
+                     -> (f (Abstract.Expression l l f f) -> f (Abstract.Expression l l f f) -> Abstract.Expression λ l f f)
+                     -> (forall n. Integral n => n -> n -> n)
+                     -> SynCFExp l l -> SynCFExp l l -> SynCFExp λ l
+foldBinaryInteger pos@(start, ls, end) node op l r =
+   case join (foldValues <$> foldedValue l <*> foldedValue r)
+   of Just v -> Oberon.ConstantFolder.literalSynthesis v
+      Nothing -> SynCFExp{folded= Mapped (pos, node (foldedExp' l) (foldedExp' r)),
+                          foldedValue= Nothing}
+   where foldValues :: Placed (AST.Value l l f f) -> Placed (AST.Value l l f f) -> Maybe (Placed (AST.Value l l f f))
+         foldValues (_, AST.Integer l') ((_, ls', _), AST.Integer r') = Just ((start, anyWhitespace ls ls', end),
+                                                                              AST.Integer $ op l' r')
+         foldValues _ _ = Nothing
 
 -- * More boring Transformation.Functor instances, TH candidates
 instance Ord (Abstract.QualIdent l) => Transformation.At (Auto ConstantFold) (Modules l Sem Sem) where
