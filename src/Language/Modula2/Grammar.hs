@@ -10,6 +10,7 @@ import Control.Arrow (first)
 import Control.Monad (guard, void)
 import Data.Char (isAlphaNum, isDigit, isHexDigit, isLetter, isOctDigit, isSpace)
 import Data.List.NonEmpty (NonEmpty, toList)
+import Data.Ord (Down)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
@@ -103,7 +104,7 @@ data Modula2Grammar l f p = Modula2Grammar {
    compilationUnit :: p (NodeWrap (Abstract.Module l l f f))
    }
 
-type NodeWrap = (,) (Position, ParsedLexemes, Position)
+type NodeWrap = (,) (Down Int, ParsedLexemes, Down Int)
 
 modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
