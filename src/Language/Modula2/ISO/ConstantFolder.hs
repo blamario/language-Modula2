@@ -101,25 +101,25 @@ instance Rank2.Apply (Modules l f') where
    ~(Modules fs) <*> ~(Modules ms) = Modules (Map.intersectionWith Rank2.apply fs ms)
 
 -- * Boring attribute types
-type instance Atts (Synthesized (Auto ConstantFold)) (Modules l _ _) = SynCFRoot (Modules l Placed Identity)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Block λ l _ _) = SynCFMod' l (AST.Block l l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Declaration full λ l _ _) = SynCFMod' l (AST.Declaration full l l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.AddressedIdent λ l _ _) = SynCF' (AST.AddressedIdent l l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Type λ l _ _) = SynCF' (AST.Type l l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Expression λ l _ _) = SynCFExp λ l
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Item λ l _ _) = SynCF' (AST.Item l l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Statement λ l _ _) = SynCF' (AST.Statement l l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Variant λ l _ _) = SynCF' (AST.Variant l l)
+type instance Atts (Synthesized ConstantFold) (Modules l _ _) = SynCFRoot (Modules l Placed Identity)
+type instance Atts (Synthesized ConstantFold) (AST.Block λ l _ _) = SynCFMod' l (AST.Block l l)
+type instance Atts (Synthesized ConstantFold) (AST.Declaration full λ l _ _) = SynCFMod' l (AST.Declaration full l l)
+type instance Atts (Synthesized ConstantFold) (AST.AddressedIdent λ l _ _) = SynCF' (AST.AddressedIdent l l)
+type instance Atts (Synthesized ConstantFold) (AST.Type λ l _ _) = SynCF' (AST.Type l l)
+type instance Atts (Synthesized ConstantFold) (AST.Expression λ l _ _) = SynCFExp λ l
+type instance Atts (Synthesized ConstantFold) (AST.Item λ l _ _) = SynCF' (AST.Item l l)
+type instance Atts (Synthesized ConstantFold) (AST.Statement λ l _ _) = SynCF' (AST.Statement l l)
+type instance Atts (Synthesized ConstantFold) (AST.Variant λ l _ _) = SynCF' (AST.Variant l l)
 
-type instance Atts (Inherited (Auto ConstantFold)) (Modules l _ _) = InhCFRoot l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Block λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Declaration full λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.AddressedIdent λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Type λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Item λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Expression λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Statement λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Variant λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (Modules l _ _) = InhCFRoot l
+type instance Atts (Inherited ConstantFold) (AST.Block λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Declaration full λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.AddressedIdent λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Type λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Item λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Expression λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Statement λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Variant λ l _ _) = InhCF l
 
 wrap :: a -> Mapped Placed a
 wrap = Mapped . (,) (0, Trailing [], 0)

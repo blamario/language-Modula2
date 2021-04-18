@@ -97,27 +97,27 @@ instance Rank2.Apply (Modules l f') where
    ~(Modules fs) <*> ~(Modules ms) = Modules (Map.intersectionWith Rank2.apply fs ms)
 
 -- * Boring attribute types
-type instance Atts (Synthesized (Auto ConstantFold)) (Modules l _ _) = SynCFRoot (Modules l Placed Identity)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Module λ l _ _) = SynCFMod' l (AST.Module λ l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Declaration full λ l _ _) = SynCFMod' l (AST.Declaration full λ l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.ProcedureHeading λ l _ _) = SynCF' (AST.ProcedureHeading λ l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Type λ l _ _) = SynCF' (AST.Type λ l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.FieldList λ l _ _) = SynCF' (AST.FieldList λ l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Expression λ l _ _) = SynCFExp λ l
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Designator λ l _ _) = SynCFDesignator l
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Statement λ l _ _) = SynCF' (AST.Statement λ l)
-type instance Atts (Synthesized (Auto ConstantFold)) (AST.Variant λ l _ _) = SynCF' (AST.Variant λ l)
+type instance Atts (Synthesized ConstantFold) (Modules l _ _) = SynCFRoot (Modules l Placed Identity)
+type instance Atts (Synthesized ConstantFold) (AST.Module λ l _ _) = SynCFMod' l (AST.Module λ l)
+type instance Atts (Synthesized ConstantFold) (AST.Declaration full λ l _ _) = SynCFMod' l (AST.Declaration full λ l)
+type instance Atts (Synthesized ConstantFold) (AST.ProcedureHeading λ l _ _) = SynCF' (AST.ProcedureHeading λ l)
+type instance Atts (Synthesized ConstantFold) (AST.Type λ l _ _) = SynCF' (AST.Type λ l)
+type instance Atts (Synthesized ConstantFold) (AST.FieldList λ l _ _) = SynCF' (AST.FieldList λ l)
+type instance Atts (Synthesized ConstantFold) (AST.Expression λ l _ _) = SynCFExp λ l
+type instance Atts (Synthesized ConstantFold) (AST.Designator λ l _ _) = SynCFDesignator l
+type instance Atts (Synthesized ConstantFold) (AST.Statement λ l _ _) = SynCF' (AST.Statement λ l)
+type instance Atts (Synthesized ConstantFold) (AST.Variant λ l _ _) = SynCF' (AST.Variant λ l)
 
-type instance Atts (Inherited (Auto ConstantFold)) (Modules l _ _) = InhCFRoot l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Module λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Declaration full λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.ProcedureHeading λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Type λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.FieldList λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Expression λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Designator λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Statement λ l _ _) = InhCF l
-type instance Atts (Inherited (Auto ConstantFold)) (AST.Variant λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (Modules l _ _) = InhCFRoot l
+type instance Atts (Inherited ConstantFold) (AST.Module λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Declaration full λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.ProcedureHeading λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Type λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.FieldList λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Expression λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Designator λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Statement λ l _ _) = InhCF l
+type instance Atts (Inherited ConstantFold) (AST.Variant λ l _ _) = InhCF l
 
 type Placed = (,) (Int, ParsedLexemes, Int)
 
