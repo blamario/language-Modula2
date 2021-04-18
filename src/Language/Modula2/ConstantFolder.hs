@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds, DeriveGeneric, DuplicateRecordFields, FlexibleContexts, FlexibleInstances,
              InstanceSigs,
              MultiParamTypeClasses, OverloadedStrings, RankNTypes,
-             ScopedTypeVariables, TemplateHaskell, TypeApplications, TypeFamilies, UndecidableInstances #-}
+             ScopedTypeVariables, TypeApplications, TypeFamilies, UndecidableInstances #-}
 
 -- | The main export of this module is the function 'foldConstants' that folds the constants in a Modula-2 AST using
 -- an attribute grammar. Other exports are helper functions and attribute types that can be reused for other languages
@@ -27,7 +27,6 @@ import Data.Semigroup (Semigroup(..))
 import qualified Data.Text as Text
 import Foreign.Storable (sizeOf)
 import GHC.Generics (Generic)
-import Language.Haskell.TH (appT, conT, varT, varE, newName)
 import Data.Text.Prettyprint.Doc (Pretty)
 
 import qualified Rank2
@@ -241,32 +240,3 @@ instance (Abstract.Modula2 l, Ord (Abstract.QualIdent l), v ~ Abstract.Value l l
          SynthesizedField "designatorValue" (Maybe (Placed v)) (Auto ConstantFold) (AST.Designator l l) Sem Placed where
    synthesizedField _ _ (pos, AST.Variable q) inheritance _ = (,) pos <$> join (Map.lookup q $ env inheritance)
    synthesizedField _ _ _ _ _ = Nothing
-
--- * More boring Transformation.Functor instances, TH candidates
-instance Ord (Abstract.QualIdent l) => Transformation.At (Auto ConstantFold) (Modules l Sem Sem) where
-   ($) = AG.applyDefault snd
-
--- * Unsafe Rank2 AST instances
-
-$(do l <- varT  <$> newName "l"
-     mconcat <$> mapM (\g-> Transformation.Full.TH.deriveUpFunctor (conT ''Auto `appT` conT ''ConstantFold) $ conT g `appT` l `appT` l)
-        [''AST.Type, ''AST.FieldList,
-         ''AST.ProcedureHeading,
-         ''AST.Expression, ''AST.Designator,
-         ''AST.Statement, ''AST.Variant])
-
-$(do let sem = [t|Semantics (Auto ConstantFold)|]
-     let inst g = [d| instance Attribution (Auto ConstantFold) ($g l l) Sem Placed =>
-                               Transformation.At (Auto ConstantFold) ($g l l $sem $sem)
-                         where ($) = AG.applyDefault snd |]
-     mconcat <$> mapM (inst . conT)
-        [''AST.Module, ''AST.ProcedureHeading, ''AST.Type, ''AST.FieldList,
-         ''AST.Statement, ''AST.Expression, ''AST.Designator, ''AST.Variant])
-
-$(do full <- varT  <$> newName "full"
-     l <- varT  <$> newName "l"
-     Transformation.Full.TH.deriveUpFunctor [t| (Auto ConstantFold) |] [t| AST.Declaration $full $l $l |])
-
-instance Attribution (Auto ConstantFold) (AST.Declaration full l l) Sem Placed
-      => Transformation.At (Auto ConstantFold) (AST.Declaration full l l Sem Sem) where
-   ($) = AG.applyDefault snd
