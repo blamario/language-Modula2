@@ -13,7 +13,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive.Transformer (lift, tmap)
+import Text.Grampa.ContextFree.LeftRecursive.Transformer (autochain, lift, tmap)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -80,7 +80,7 @@ isoMixin ReportGrammar.Modula2Grammar{..} ISOMixin{..} = ISOMixin{
 type ISOGrammar l = Rank2.Product (ISOMixin l ReportGrammar.NodeWrap) (ReportGrammar.Modula2Grammar l ReportGrammar.NodeWrap)
 
 modula2ISOgrammar :: Grammar (ISOGrammar AST.Language) Parser Text
-modula2ISOgrammar = fixGrammar isoGrammar
+modula2ISOgrammar = autochain $ fixGrammar isoGrammar
 
 -- | All the productions of the ISO Modula-2 grammar
 isoGrammar :: forall l g. (ISO.Abstract.Modula2 l, Rank2.Apply g, LexicalParsing (Parser g Text))

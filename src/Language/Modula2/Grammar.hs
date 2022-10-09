@@ -16,7 +16,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive.Transformer (ParserT, lift, tmap)
+import Text.Grampa.ContextFree.LeftRecursive.Transformer (ParserT, autochain, lift, tmap)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
@@ -110,7 +110,7 @@ type NodeWrap = (,) (Down Int, ParsedLexemes, Down Int)
 $(Rank2.TH.deriveAll ''Modula2Grammar)
 
 modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
-modula2grammar = fixGrammar grammar
+modula2grammar = autochain $ fixGrammar grammar
 
 -- | All the productions of Modula-2 grammar
 grammar :: forall l g. (Abstract.Modula2 l, Rank2.Apply g, LexicalParsing (Parser g Text))
