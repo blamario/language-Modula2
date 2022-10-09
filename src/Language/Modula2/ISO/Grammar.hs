@@ -46,8 +46,10 @@ data ISOMixin l f p = ISOMixin{
    arrayPart :: p (ISO.Abstract.Item l l f f),
    structureComponent  :: p (f (Abstract.Expression l l f f))}
 
+$(Rank2.TH.deriveAll ''ISOMixin)
+
 -- | The new grammar productions in the ISO specification
-isoMixin :: (ISO.Abstract.Modula2 l, LexicalParsing (Parser g Text))
+isoMixin :: (ISO.Abstract.Modula2 l, Rank2.Apply g, LexicalParsing (Parser g Text))
          => ReportGrammar.Modula2Grammar l ReportGrammar.NodeWrap (Parser g Text)
          -> ISOMixin l ReportGrammar.NodeWrap (Parser g Text)
          -> ISOMixin l ReportGrammar.NodeWrap (Parser g Text)
@@ -81,7 +83,7 @@ modula2ISOgrammar :: Grammar (ISOGrammar AST.Language) Parser Text
 modula2ISOgrammar = fixGrammar isoGrammar
 
 -- | All the productions of the ISO Modula-2 grammar
-isoGrammar :: forall l g. (ISO.Abstract.Modula2 l, LexicalParsing (Parser g Text))
+isoGrammar :: forall l g. (ISO.Abstract.Modula2 l, Rank2.Apply g, LexicalParsing (Parser g Text))
            => GrammarBuilder (ISOGrammar l) g Parser Text
 isoGrammar (Rank2.Pair iso@ISOMixin{..} report@ReportGrammar.Modula2Grammar{..}) =
    Rank2.Pair (isoMixin report iso) $
@@ -131,8 +133,6 @@ instance LexicalParsing (Parser (ISOGrammar l) Text) where
                <?> ("keyword " <> show s)
 
 reservedWords = ReportGrammar.reservedWords <> ["EXCEPT", "FINALLY", "FORWARD", "PACKEDSET", "REM", "RETRY"]
-
-$(Rank2.TH.deriveAll ''ISOMixin)
 
 {-
 compilation module = program module | definition module | implementation module,

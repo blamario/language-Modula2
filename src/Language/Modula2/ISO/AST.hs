@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, DeriveDataTypeable, FlexibleInstances, GADTs, KindSignatures, InstanceSigs,
+{-# LANGUAGE DataKinds, DeriveDataTypeable, FlexibleContexts, FlexibleInstances, GADTs, KindSignatures, InstanceSigs,
              MultiParamTypeClasses, UndecidableInstances,
              ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}

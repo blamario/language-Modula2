@@ -20,6 +20,7 @@ import Text.Grampa.ContextFree.LeftRecursive.Transformer (ParserT, lift, tmap)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
+import qualified Rank2
 import qualified Rank2.TH
 import Language.Oberon.Grammar (Lexeme(..), TokenType(..), ParsedLexemes(Trailing))
 
@@ -106,11 +107,13 @@ data Modula2Grammar l f p = Modula2Grammar {
 
 type NodeWrap = (,) (Down Int, ParsedLexemes, Down Int)
 
+$(Rank2.TH.deriveAll ''Modula2Grammar)
+
 modula2grammar :: Grammar (Modula2Grammar AST.Language NodeWrap) Parser Text
 modula2grammar = fixGrammar grammar
 
 -- | All the productions of Modula-2 grammar
-grammar :: forall l g. (Abstract.Modula2 l, LexicalParsing (Parser g Text))
+grammar :: forall l g. (Abstract.Modula2 l, Rank2.Apply g, LexicalParsing (Parser g Text))
         => GrammarBuilder (Modula2Grammar l NodeWrap) g Parser Text
 grammar g@Modula2Grammar{..} = g{
    ident = identifier,
@@ -302,17 +305,17 @@ instance LexicalParsing (Parser (Modula2Grammar l f) Text) where
                              <* lift ([[Token Keyword s]], ()))
                <?> ("keyword " <> show s)
 
-comment :: Parser g Text Text
+comment :: Rank2.Apply g => Parser g Text Text
 comment = try (string "(*"
                <> concatMany (comment <<|> notFollowedBy (string "*)") *> anyToken <> takeCharsWhile isCommentChar)
                <> string "*)")
    where isCommentChar c = c /= '*' && c /= '('
 
-whiteSpace :: LexicalParsing (Parser g Text) => Parser g Text ()
+whiteSpace :: Rank2.Apply g => LexicalParsing (Parser g Text) => Parser g Text ()
 whiteSpace = spaceChars *> skipMany (lexicalComment *> spaceChars) <?> "whitespace"
    where spaceChars = (takeCharsWhile1 isSpace >>= \ws-> lift ([[WhiteSpace ws]], ())) <<|> pure ()
 
-wrap :: Parser g Text a -> Parser g Text (NodeWrap a)
+wrap :: Rank2.Apply g => Parser g Text a -> Parser g Text (NodeWrap a)
 wrap = (\p-> liftA3 surround getSourcePos p getSourcePos) . tmap store . ((,) (Trailing []) <$>)
    where surround start (lexemes, p) end = ((start, lexemes, end), p)
          store (wss, (Trailing ws', a)) = (mempty, (Trailing $ ws' <> concat wss, a))
@@ -334,5 +337,3 @@ reservedWords = ["AND", "ARRAY", "BEGIN", "BY",
                  "QUALIFIED", "RECORD", "REPEAT", "RETURN",
                  "SET", "THEN", "TO", "TYPE",
                  "UNTIL", "VAR", "WHILE", "WITH"]
-
-$(Rank2.TH.deriveAll ''Modula2Grammar)
