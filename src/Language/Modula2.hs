@@ -34,7 +34,6 @@ import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
 import Data.Text.IO (readFile)
 import Text.Grampa (Ambiguous, Grammar, ParseResults, parseComplete, failureDescription)
-import qualified Text.Grampa.ContextFree.LeftRecursive as LeftRecursive
 import qualified Text.Parser.Input.Position as Position
 import System.Directory (doesFileExist)
 import System.FilePath (FilePath, addExtension, combine, takeDirectory)

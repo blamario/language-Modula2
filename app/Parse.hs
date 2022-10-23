@@ -40,7 +40,6 @@ import qualified Data.Text.IO as Text
 import Data.Typeable (Typeable)
 import Options.Applicative
 import Text.Grampa (Ambiguous, Grammar, ParseResults, parseComplete, failureDescription)
-import qualified Text.Grampa.ContextFree.LeftRecursive as LeftRecursive
 import ReprTree
 import System.FilePath (FilePath, addExtension, combine, takeDirectory)
 

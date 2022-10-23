@@ -13,7 +13,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text, unpack)
 import Numeric (readOct, readDec, readHex, readFloat)
 import Text.Grampa
-import Text.Grampa.ContextFree.LeftRecursive.Transformer (autochain, lift, tmap)
+import Text.Grampa.ContextFree.SortedMemoizing.Transformer.LeftRecursive (autochain, lift, tmap)
 import Text.Parser.Combinators (sepBy, sepBy1, sepByNonEmpty, try)
 import Text.Parser.Token (braces, brackets, parens)
 
