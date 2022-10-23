@@ -1,5 +1,9 @@
 # Revision history for language-Modula2
 
+## 0.1.3 -- 2022-10-23
+
+* Using `autochain` and new imports from grammatical-parsers-0.7
+
 ## 0.1.2 -- 2022-10-09
 
 * Compiling with GHC 9
