@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds, DeriveGeneric, DuplicateRecordFields, FlexibleContexts, FlexibleInstances,
              InstanceSigs,
-             MultiParamTypeClasses, OverloadedStrings, RankNTypes,
+             MultiParamTypeClasses, OverloadedRecordDot, OverloadedStrings, RankNTypes,
              ScopedTypeVariables, TypeApplications, TypeFamilies, UndecidableInstances #-}
 
 -- | The main export of this module is the function 'foldConstants' that folds the constants in a Modula-2 AST using
@@ -76,10 +76,9 @@ foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
               => Environment l -> AST.Module l l Placed Placed -> AST.Module l l Placed Placed
 foldConstants predef aModule =
    snd $ getMapped
-   $ folded (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing [], 0), Auto ConstantFold Deep.<$> aModule)
-                  `Rank2.apply`
-                  Inherited (InhCF predef undefined))
-             :: SynCFMod' l (AST.Module l l))
+   $ (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing [], 0), Auto ConstantFold Deep.<$> aModule)
+           `Rank2.apply`
+           Inherited (InhCF predef undefined))).folded
 
 newtype Modules l f' f = Modules {getModules :: Map AST.Ident (f (AST.Module l l f' f'))}
 
@@ -125,12 +124,10 @@ type Placed = (,) (Int, ParsedLexemes, Int)
 
 instance Ord (Abstract.QualIdent l) => Attribution (Auto ConstantFold) (Modules l) Sem Placed where
    attribution _ (_, Modules self) (Inherited inheritance, Modules ms) =
-     (Synthesized SynCFRoot{modulesFolded= Modules (pure . snd . getMapped . foldedModule . syn <$> ms)},
+     (Synthesized SynCFRoot{modulesFolded= Modules (pure . snd . getMapped . (.folded) . syn <$> ms)},
       Modules (Map.mapWithKey moduleInheritance self))
      where moduleInheritance name mod = Inherited InhCF{env= rootEnv inheritance <> foldMap (moduleEnv . syn) ms,
                                                         currentModule= name}
-           foldedModule :: SynCFMod' l (AST.Module l l) -> Mapped Placed (AST.Module l l Placed Placed)
-           foldedModule = folded
 
 instance (Abstract.Modula2 l, Abstract.Nameable l, k ~ Abstract.QualIdent l, Ord k, Show k,
           v ~ Abstract.Value l l Placed Placed,
@@ -188,7 +185,7 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
       SynCFExp{folded= Mapped (pos, Abstract.set t (getMapped . folded' . syn <$> getZipList elements)),
                foldedValue= Nothing}
    synthesis _ (pos, _) _ (AST.Read des) =
-      case (designatorValue (syn des), getMapped $ folded (syn des :: SynCFDesignator l))
+      case (designatorValue (syn des), getMapped $ (syn des).folded)
       of (Just val, _) -> Oberon.literalSynthesis val
          (Nothing, (pos', des')) -> SynCFExp{folded= Mapped (pos, Abstract.read (pos', des')),
                                              foldedValue= Nothing}

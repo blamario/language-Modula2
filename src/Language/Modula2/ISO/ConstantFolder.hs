@@ -1,5 +1,5 @@
 {-# LANGUAGE DataKinds, DuplicateRecordFields, FlexibleContexts, FlexibleInstances,
-             MultiParamTypeClasses, OverloadedStrings, RankNTypes,
+             MultiParamTypeClasses, OverloadedRecordDot, OverloadedStrings, RankNTypes,
              ScopedTypeVariables, TypeApplications, TypeFamilies, UndecidableInstances #-}
 
 -- | The main export of this module is the function 'foldConstants' that folds the constants in an ISO Modula-2 AST
@@ -80,10 +80,9 @@ foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
               => Environment l -> AST.Module l l Placed Placed -> AST.Module l l Placed Placed
 foldConstants predef aModule =
    snd $ getMapped
-   $ folded (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing [], 0), Auto ConstantFold Deep.<$> aModule)
-                  `Rank2.apply`
-                  Inherited (InhCF predef undefined))
-             :: SynCFMod' l (AST.Module l l))
+   $ (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing [], 0), Auto ConstantFold Deep.<$> aModule)
+           `Rank2.apply`
+           Inherited (InhCF predef undefined))).folded
 
 newtype Modules l f' f = Modules {getModules :: Map AST.Ident (f (AST.Module l l f' f'))}
 
@@ -128,12 +127,10 @@ wrap = Mapped . (,) (0, Trailing [], 0)
 
 instance Ord (Abstract.QualIdent l) => Attribution (Auto ConstantFold) (Modules l) Sem Placed where
    attribution _ (_, Modules self) (Inherited inheritance, Modules ms) =
-     (Synthesized SynCFRoot{modulesFolded= Modules (pure . snd . getMapped . foldedModule . syn <$> ms)},
+     (Synthesized SynCFRoot{modulesFolded= Modules (pure . snd . getMapped . (.folded) . syn <$> ms)},
       Modules (Map.mapWithKey moduleInheritance self))
      where moduleInheritance name mod = Inherited InhCF{env= rootEnv inheritance <> foldMap (moduleEnv . syn) ms,
                                                         currentModule= name}
-           foldedModule :: SynCFMod' l (AST.Module l l) -> Mapped Placed (AST.Module l l Placed Placed)
-           foldedModule = folded
 
 instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
           Atts (Synthesized (Auto ConstantFold)) (Abstract.Declaration l l Sem Sem) ~ SynCFMod' l (Abstract.Declaration l l),
