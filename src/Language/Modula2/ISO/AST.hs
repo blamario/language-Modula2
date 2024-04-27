@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds, DeriveDataTypeable, FlexibleContexts, FlexibleInstances, GADTs, KindSignatures, InstanceSigs,
              MultiParamTypeClasses, UndecidableInstances,
-             ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies #-}
+             ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies, TypeOperators #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
 -- | ISO Modula-2 Abstract Syntax Tree definitions

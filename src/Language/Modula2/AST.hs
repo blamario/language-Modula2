@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable, FlexibleContexts, FlexibleInstances, GADTs, DataKinds, InstanceSigs, KindSignatures,
              MultiParamTypeClasses, UndecidableInstances,
-             ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies #-}
+             ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TypeFamilies, TypeOperators #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
 -- | Concrete data types for Modula-2 constructs that make up its Abstract Syntax Tree. Every data type from this

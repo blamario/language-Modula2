@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds, DeriveGeneric, DuplicateRecordFields, FlexibleContexts, FlexibleInstances,
              InstanceSigs,
              MultiParamTypeClasses, OverloadedRecordDot, OverloadedStrings, RankNTypes,
-             ScopedTypeVariables, TypeApplications, TypeFamilies, UndecidableInstances #-}
+             ScopedTypeVariables, TypeApplications, TypeFamilies, TypeOperators, UndecidableInstances #-}
 
 -- | The main export of this module is the function 'foldConstants' that folds the constants in a Modula-2 AST using
 -- an attribute grammar. Other exports are helper functions and attribute types that can be reused for other languages
