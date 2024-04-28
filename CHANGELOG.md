@@ -1,5 +1,10 @@
 # Revision history for language-Modula2
 
+## 0.1.4.1 -- 2024-04-27
+
+* Fixed deprecation warnings
+* Bumped the upper bound of `filepath`
+
 ## 0.1.4 -- 2023-09-26
 
 * Using `OverloadedRecordDot` (GHC >= 9.2) instead of field accessors unsupported by GHC 9.6
