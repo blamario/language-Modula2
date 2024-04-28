@@ -9,6 +9,7 @@ module Language.Modula2.Abstract (Ident, IdentList, BaseType, ConstExpression, P
                                   RelOp(..), WirthySubsetOf(..), Maybe3(..), just3, maybe3, nothing3) where
 
 import Data.Data (Data, Typeable)
+import qualified Data.Kind as K (Type)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
@@ -26,8 +27,8 @@ type Priority l = ConstExpression l
 -- * @f@ wraps all direct children of the node.
 class Wirthy l => Modula2 l where
    type Export l = x | x -> l
-   type Definition l = (d :: * -> (* -> *) -> (* -> *) -> *) | d -> l
-   type Variant l = (v :: * -> (* -> *) -> (* -> *) -> *) | v -> l
+   type Definition l = (d :: K.Type -> (K.Type -> K.Type) -> (K.Type -> K.Type) -> K.Type) | d -> l
+   type Variant l = (v :: K.Type -> (K.Type -> K.Type) -> (K.Type -> K.Type) -> K.Type) | v -> l
 
    -- Module
    definitionModule :: Ident -> [Import l'] -> Maybe (Export l') -> [f (Definition l' l' f' f')] -> Module l l' f' f

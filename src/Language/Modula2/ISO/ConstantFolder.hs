@@ -17,6 +17,7 @@ import Data.Coerce (Coercible, coerce)
 import Data.Functor.Identity (Identity(..))
 import Data.Int (Int32)
 import Data.Foldable (fold)
+import qualified Data.Kind as K (Type)
 import Data.List.NonEmpty (toList)
 import Data.Map.Lazy (Map)
 import Data.Maybe (fromMaybe)
@@ -203,7 +204,7 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
                foldedValue= Nothing}
    synthesis t (pos, self) (InhCF environment currMod) synthesized =
       fromReport (synthesis t (pos, toReport self) (InhCF environment currMod) $ toReport synthesized)
-      where fromJust :: forall f a (b :: * -> *) (c :: * -> *). Oberon.Abstract.Maybe3 f a b c -> f a b c
+      where fromJust :: forall f a (b :: K.Type -> K.Type) (c :: K.Type -> K.Type). Oberon.Abstract.Maybe3 f a b c -> f a b c
             fromJust (Oberon.Abstract.Maybe3 Nothing) =
                error ("Modula-2 expression cannot be converted from ISO to Report at " ++ show pos)
             fromJust (Oberon.Abstract.Maybe3 (Just e)) = e

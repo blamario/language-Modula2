@@ -20,6 +20,7 @@ import Data.Coerce (Coercible, coerce)
 import Data.Functor.Identity (Identity(..))
 import Data.Int (Int32)
 import Data.Foldable (fold)
+import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty((:|)), toList)
 import Data.Map.Lazy (Map)
 import qualified Data.Map.Lazy as Map
@@ -209,7 +210,7 @@ instance (Abstract.Nameable l, Ord (Abstract.QualIdent l),
             argValues = (snd <$>) . foldedValue . syn <$> getZipList args
    synthesis t (pos, self) (InhCF environment currMod) synthesized =
       fromOberon (synthesis t (pos, toOberon self) (InhCF environment currMod) $ toOberon synthesized)
-      where fromJust3 :: forall f a (b :: * -> *) (c :: * -> *). Oberon.Abstract.Maybe3 f a b c -> f a b c
+      where fromJust3 :: forall f a (b :: Type -> Type) (c :: Type -> Type). Oberon.Abstract.Maybe3 f a b c -> f a b c
             fromJust3 (Oberon.Abstract.Maybe3 Nothing) =
                error ("Modula-2 expression cannot be converted to Oberon at " ++ show pos)
             fromJust3 (Oberon.Abstract.Maybe3 (Just e)) = e

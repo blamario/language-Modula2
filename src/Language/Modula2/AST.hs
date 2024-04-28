@@ -19,6 +19,7 @@ import Control.Applicative (ZipList(ZipList, getZipList))
 import Control.Monad (forM, mapM)
 import Data.Coerce (coerce)
 import Data.Data (Data, Typeable)
+import qualified Data.Kind as K (Type)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
@@ -264,7 +265,7 @@ deriving instance (Show (Abstract.Import l), Show (Abstract.Export l), Show (f (
                    Show (f (Abstract.Declaration l l f' f')), Show (f (Abstract.Definition l l f' f')),
                    Show (f (Abstract.Block l l f' f'))) => Show (Module λ l f' f)
 
-data Declaration (full :: Bool) λ l (f' :: * -> *) (f :: * -> *) where
+data Declaration (full :: Bool) λ l (f' :: K.Type -> K.Type) (f :: K.Type -> K.Type) where
    ConstantDeclaration :: Abstract.IdentDef l -> f (Abstract.ConstExpression l l f' f') -> Declaration x λ l f' f
    TypeDeclaration :: Abstract.IdentDef l -> f (Abstract.Type l l f' f') -> Declaration x λ l f' f
    OpaqueTypeDeclaration :: Abstract.IdentDef l -> Declaration False λ l f' f

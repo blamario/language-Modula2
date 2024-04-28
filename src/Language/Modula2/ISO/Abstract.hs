@@ -7,6 +7,7 @@
 module Language.Modula2.ISO.Abstract (Modula2(..)) where
 
 import Data.Data (Data, Typeable)
+import qualified Data.Kind as K (Type)
 import Data.List.NonEmpty
 import Data.Text (Text)
 
@@ -15,8 +16,8 @@ import Language.Modula2.Abstract hiding (Modula2)
 
 -- | The additional finally-tagless associated types and methods relevant to the ISO Modula-2 language.
 class Report.Modula2 l => Modula2 l where
-   type AddressedIdent l = (d :: * -> (* -> *) -> (* -> *) -> *) | d -> l
-   type Item l = (i :: * -> (* -> *) -> (* -> *) -> *) | i -> l
+   type AddressedIdent l = (d :: K.Type -> (K.Type -> K.Type) -> (K.Type -> K.Type) -> K.Type) | d -> l
+   type Item l = (i :: K.Type -> (K.Type -> K.Type) -> (K.Type -> K.Type) -> K.Type) | i -> l
 
    -- Declaration
    emptyVariant :: Variant l l' f' f
