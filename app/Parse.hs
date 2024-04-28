@@ -23,8 +23,8 @@ import qualified Transformation.Deep as Deep
 import qualified Transformation.Full as Full
 import Transformation.AG.Generics (Auto)
 
-import Data.Text.Prettyprint.Doc (Pretty(pretty))
-import Data.Text.Prettyprint.Doc.Util (putDocW)
+import Prettyprinter (Pretty(pretty))
+import Prettyprinter.Util (putDocW)
 
 import Control.Monad
 import Data.Data (Data)

@@ -12,8 +12,8 @@ import Data.Functor.Identity (Identity(..))
 import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty((:|)), fromList, toList)
 import qualified Data.Text as Text
-import Data.Text.Prettyprint.Doc
-import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+import Prettyprinter
+import Prettyprinter.Render.Text (renderStrict)
 
 import qualified Language.Oberon.Abstract
 import qualified Language.Oberon.AST

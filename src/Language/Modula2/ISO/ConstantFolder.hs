@@ -24,7 +24,7 @@ import qualified Data.Map.Lazy as Map
 import Data.Semigroup (Semigroup(..))
 import qualified Data.Text as Text
 import Foreign.Storable (sizeOf)
-import Data.Text.Prettyprint.Doc (Pretty)
+import Prettyprinter (Pretty)
 
 import qualified Rank2
 import qualified Transformation
