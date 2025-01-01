@@ -1,5 +1,10 @@
 # Revision history for language-Modula2
 
+## 0.1.4.2 -- 2025-01-01
+
+* Removed the template-haskell dependency
+* Bumped the upper bound of deep-transformations
+
 ## 0.1.4.1 -- 2024-04-27
 
 * Fixed deprecation warnings
