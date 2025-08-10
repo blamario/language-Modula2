@@ -1,5 +1,5 @@
-{-# Language FlexibleContexts, GADTs, OverloadedStrings,
-             ScopedTypeVariables, StandaloneDeriving, TypeFamilies, TypeOperators #-}
+{-# Language FlexibleInstances, FlexibleContexts, GADTs, MultiParamTypeClasses, OverloadedStrings,
+             ScopedTypeVariables, StandaloneDeriving, TypeFamilies, TypeOperators, UndecidableInstances #-}
 
 -- | The programming language Modula-2
 
@@ -19,7 +19,7 @@ import Language.Modula2.ISO.Pretty ()
 
 import qualified Language.Oberon.Reserializer as Reserializer
 
-import qualified Rank2 as Rank2 (snd)
+import qualified Rank2 as Rank2 (Functor, snd)
 import Transformation.AG (Atts, Inherited, Synthesized)
 import Transformation.AG.Generics (Auto)
 import qualified Transformation.Rank2 as Rank2
@@ -29,6 +29,7 @@ import qualified Transformation.Deep as Deep
 import Control.Arrow (first)
 import Control.Monad (when)
 import Data.Functor.Compose (Compose(Compose, getCompose))
+import Data.Functor.Identity (Identity)
 import qualified Data.Map.Lazy as Map
 import Data.Map.Lazy (Map)
 import Data.Monoid ((<>))
@@ -43,6 +44,14 @@ import Prelude hiding (readFile)
 
 -- | Every node in a parsed and resolved AST is wrapped with this functor
 type Placed = (,) (Int, Grammar.ParsedLexemes, Int)
+
+instance (Rank2.Functor (g Grammar.NodeWrap), Deep.Functor (Rank2.Map Grammar.NodeWrap Placed) g) =>
+         Full.Functor (Rank2.Map Grammar.NodeWrap Placed) g where
+  (<$>) = Full.mapUpDefault
+
+instance (Rank2.Functor (g Placed), Deep.Functor (Rank2.Map Placed Identity) g) =>
+         Full.Functor (Rank2.Map Placed Identity) g where
+  (<$>) = Full.mapUpDefault
 
 -- | The modes of operation
 data Options = Options{
