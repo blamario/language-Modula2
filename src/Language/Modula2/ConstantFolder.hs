@@ -8,7 +8,7 @@
 -- or attribute grammars.
 
 module Language.Modula2.ConstantFolder (foldConstants,
-                                        ConstantFold, Sem, Environment, InhCF,
+                                        ConstantFold, Environment, InhCF,
                                         SynCF(..), SynCFDesignator(..), SynCFExp(..), SynCFMod(..), SynCFMod') where
 
 import Control.Applicative (liftA2, ZipList(ZipList, getZipList))
@@ -45,7 +45,7 @@ import Language.Modula2.Grammar (ParsedLexemes(Trailing), Lexeme(WhiteSpace))
 import qualified Language.Oberon.Abstract as Oberon.Abstract
 import qualified Language.Oberon.AST as Oberon.AST
 import qualified Language.Oberon.ConstantFolder as Oberon
-import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Sem, Environment,
+import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Environment,
                                        InhCF(..), InhCFRoot(..), SynCF(..), SynCF',
                                        SynCFRoot(..), SynCFMod(..), SynCFDesignator(..), SynCFMod', SynCFExp(..),
                                        anyWhitespace, folded', foldedExp, foldedExp')
@@ -71,13 +71,13 @@ foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
                             Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l) ~ SynCFExp l l,
                             Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l)
                             ~ SynCFExp l l,
-                            Full.Functor (Auto ConstantFold) (Abstract.Block l l),
-                            Full.Functor (Auto ConstantFold) (Abstract.Definition l l),
-                            Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
+                            Full.Functor (AG.Knit (Auto ConstantFold)) (Abstract.Block l l),
+                            Full.Functor (AG.Knit (Auto ConstantFold)) (Abstract.Definition l l),
+                            Full.Functor (AG.Knit (Auto ConstantFold)) (Abstract.Expression l l))
               => Environment l -> AST.Module l l Placed Placed -> AST.Module l l Placed Placed
 foldConstants predef aModule =
    snd $ getMapped
-   $ (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing [], 0), Auto ConstantFold Deep.<$> aModule)
+   $ (syn ((AG.Knit (Auto ConstantFold) Full.<$> ((0, Trailing [], 0), aModule))
            `Rank2.apply`
            Inherited (InhCF predef undefined))).folded
 
@@ -123,7 +123,7 @@ type Placed = (,) (Int, ParsedLexemes, Int)
 
 -- * Rules
 
-instance Ord (Abstract.QualIdent l) => Attribution (Auto ConstantFold) (Modules l) where
+instance Ord (Abstract.QualIdent l) => AG.At (Auto ConstantFold) (Modules l) where
    attribution _ (_, Modules self) (Inherited inheritance, Modules ms) =
      (Synthesized SynCFRoot{modulesFolded= Modules (pure . snd . getMapped . (.folded) . syn <$> ms)},
       Modules (Map.mapWithKey moduleInheritance self))

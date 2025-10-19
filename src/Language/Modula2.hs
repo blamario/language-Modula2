@@ -20,7 +20,7 @@ import Language.Modula2.ISO.Pretty ()
 import qualified Language.Oberon.Reserializer as Reserializer
 
 import qualified Rank2 as Rank2 (Functor, snd)
-import Transformation.AG (Atts, Inherited, Synthesized)
+import Transformation.AG (Atts, Inherited, Synthesized, Knit)
 import Transformation.AG.Generics (Auto)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Full as Full
@@ -86,7 +86,7 @@ resolvePosition src = \((start, ws, end), a)-> ((Position.offset src start, ws, 
 
 -- | Parse the given text of a single module and fold constants inside it.
 parseAndSimplifyModule :: (Abstract.Modula2 l, Abstract.Nameable l,
-                           Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
+                           Full.Functor (Knit (Auto ConstantFold)) (Abstract.Expression l l))
                     => Version l -> Text -> ParseResults Text [Placed (Abstract.Module l l Placed Placed)]
 parseAndSimplifyModule Report source =
    (Reserializer.adjustPositions . (ConstantFolder.foldConstants (predefined Report) <$>) <$>)

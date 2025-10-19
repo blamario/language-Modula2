@@ -48,7 +48,7 @@ import Language.Oberon.Abstract (coExpression, coValue)
 import qualified Language.Oberon.Abstract as Oberon.Abstract
 import qualified Language.Oberon.AST as Oberon.AST
 import qualified Language.Oberon.ConstantFolder as Oberon.ConstantFolder
-import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Placed, Sem, Environment,
+import Language.Oberon.ConstantFolder (ConstantFold(ConstantFold), Placed, Environment,
                                        InhCF(..), InhCFRoot(..), SynCF(..), SynCF',
                                        SynCFRoot(..), SynCFMod(..), SynCFMod', SynCFExp(..), SynCFDesignator(..),
                                        anyWhitespace, folded', foldedExp, foldedExp')
@@ -75,13 +75,13 @@ foldConstants :: forall l. (Abstract.Modula2 l, Abstract.Nameable l,
                             Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l) ~ SynCFExp l l,
                             Atts (Synthesized (Auto ConstantFold)) (Abstract.Expression l l)
                             ~ SynCFExp l l,
-                            Full.Functor (Auto ConstantFold) (Abstract.Block l l),
-                            Full.Functor (Auto ConstantFold) (Abstract.Definition l l),
-                            Full.Functor (Auto ConstantFold) (Abstract.Expression l l))
+                            Full.Functor (AG.Knit (Auto ConstantFold)) (Abstract.Block l l),
+                            Full.Functor (AG.Knit (Auto ConstantFold)) (Abstract.Definition l l),
+                            Full.Functor (AG.Knit (Auto ConstantFold)) (Abstract.Expression l l))
               => Environment l -> AST.Module l l Placed Placed -> AST.Module l l Placed Placed
 foldConstants predef aModule =
    snd $ getMapped
-   $ (syn (Transformation.apply (Auto ConstantFold) ((0, Trailing [], 0), Auto ConstantFold Deep.<$> aModule)
+   $ (syn ((AG.Knit (Auto ConstantFold) Full.<$> ((0, Trailing [], 0), aModule))
            `Rank2.apply`
            Inherited (InhCF predef undefined))).folded
 
@@ -126,7 +126,7 @@ wrap = Mapped . (,) (0, Trailing [], 0)
 
 -- * Rules
 
-instance Ord (Abstract.QualIdent l) => Attribution (Auto ConstantFold) (Modules l) where
+instance Ord (Abstract.QualIdent l) => AG.At (Auto ConstantFold) (Modules l) where
    attribution _ (_, Modules self) (Inherited inheritance, Modules ms) =
      (Synthesized SynCFRoot{modulesFolded= Modules (pure . snd . getMapped . (.folded) . syn <$> ms)},
       Modules (Map.mapWithKey moduleInheritance self))

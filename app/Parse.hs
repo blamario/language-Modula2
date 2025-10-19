@@ -21,6 +21,7 @@ import qualified Rank2 as Rank2 (Product(Pair), snd)
 import qualified Transformation.Rank2 as Rank2
 import qualified Transformation.Deep as Deep
 import qualified Transformation.Full as Full
+import Transformation.AG (Knit)
 import Transformation.AG.Generics (Auto)
 
 import Prettyprinter (Pretty(pretty))
@@ -100,7 +101,7 @@ main' Opts{..} =
       SomeVersion ISO -> process ISO
   where
      process :: (Abstract.Modula2 l, Abstract.Nameable l,
-                 Full.Functor (Auto ConstantFold) (Abstract.Expression l l)) => Version l -> IO ()
+                 Full.Functor (Knit (Auto ConstantFold)) (Abstract.Expression l l)) => Version l -> IO ()
      process version =
          case optsFile of
              Just file -> (if file == "-" then getContents else readFile file)
